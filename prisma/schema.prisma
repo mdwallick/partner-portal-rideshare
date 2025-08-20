@@ -1,0 +1,104 @@
+// Prisma schema reflecting current tables used in the app
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Partner {
+  id             String   @id @default(uuid())
+  name           String
+  type           String
+  logo_url       String?  @db.Text
+  organization_id String? @db.Text
+  status         String   @default("active")
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  songs          Song[]
+  skus           Sku[]
+  partnerUsers   PartnerUser[]
+}
+
+model User {
+  id            String   @id @default(uuid())
+  auth0_user_id String   @unique
+  email         String   @unique
+  display_name  String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  partnerUsers  PartnerUser[]
+}
+
+model PartnerUser {
+  id         String      @id @default(uuid())
+  partner    Partner     @relation(fields: [partner_id], references: [id])
+  partner_id String
+  user       User        @relation(fields: [user_id], references: [id])
+  user_id    String
+  role       PartnerRole @default(can_view)
+  status     PartnerUserStatus @default(active)
+  invited_by String?
+  invited_at DateTime   @default(now())
+  joined_at  DateTime?
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  email      String
+
+  @@unique([partner_id, user_id])
+}
+
+enum PartnerRole {
+  can_admin
+  can_manage_members
+  can_view
+}
+
+enum PartnerUserStatus {
+  active
+  pending
+  inactive
+}
+
+model Song {
+  id          String   @id @default(uuid())
+  partner     Partner  @relation(fields: [partner_id], references: [id])
+  partner_id  String
+  name        String
+  genre       String?
+  duration_s  Int?
+  play_count  Int      @default(0)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@index([partner_id])
+  @@unique([partner_id, name]) // optional: ensure unique song names per artist
+}
+
+model Sku {
+  id               String   @id @default(uuid())
+  partner          Partner  @relation(fields: [partner_id], references: [id])
+  partner_id       String
+  name             String
+  category         String?
+  series           String?
+  product_image_url String?
+  status           String   @default("active")
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  user_id       String?
+  action        String
+  resource_type String
+  resource_id   String
+  details       Json?
+  created_at    DateTime @default(now())
+}
