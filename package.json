@@ -24,20 +24,6 @@
     "test-fga": "dotenv -e .env.local -- tsx scripts/test-fga-setup.ts",
     "prepare": "husky"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md}": [
-      "prettier --write"
-    ]
-  },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.9.0",
     "@headlessui/react": "^1.7.17",
