@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { v4 as uuidv4 } from "uuid"
 import { prisma } from "@/lib/prisma"
-import { checkPermission, listObjects, writeTuple } from "@/lib/fga"
+import { checkPermission, listObjects, writeTuple, checkPlatformPermission } from "@/lib/fga"
 import { auth0 } from "@/lib/auth0"
 import { auth0ManagementAPI } from "@/lib/auth0-management"
+import { FGA_RELATIONS } from "@/lib/fga-model"
+import { PartnerType } from "@prisma/client"
 
 export async function GET() {
   try {
     const session = await auth0.getSession()
     const user = session?.user
-    //console.log('TESTING AuthN');
     console.log(`🔍 Fetching partners for user: ${user?.email} (${user?.sub})`)
     console.log(`✅❗ FGA list all partner objects that ${user?.sub} is related to as can_view`)
 
@@ -51,35 +52,59 @@ export async function POST(request: NextRequest) {
     console.log(`👤 Creating partner for user: ${user?.email} (${user?.sub})`)
 
     // Check if user has platform-level super admin access
-    const hasSuperAdminAccess = await checkPermission(
-      `user:${user?.sub}`,
-      "super_admin",
-      "platform:main"
+    const hasSuperAdminAccess = await checkPlatformPermission(
+      user?.sub || "",
+      "PLATFORM_SUPER_ADMIN"
     )
 
     if (!hasSuperAdminAccess) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const body = await request.json()
-    console.log("🔍 Request body:", body)
-    const { name, type, logo_url } = body
+    // Parse FormData for file uploads
+    const formData = await request.formData()
+    const name = formData.get("name") as string
+    const typeString = formData.get("type") as string
+    const logoFile = formData.get("logo") as File | null
 
-    if (!name || !type) {
+    console.log("🔍 Form data:", { name, typeString, hasLogo: !!logoFile })
+
+    if (!name || !typeString) {
       return NextResponse.json({ error: "Name and type are required" }, { status: 400 })
     }
 
-    if (!["artist", "merch_supplier"].includes(type)) {
-      return NextResponse.json({ error: "Invalid partner type" }, { status: 400 })
+    if (!["technology", "manufacturing"].includes(typeString)) {
+      return NextResponse.json(
+        { error: "Invalid partner type. Must be 'technology' or 'manufacturing'" },
+        { status: 400 }
+      )
+    }
+
+    // Convert string to PartnerType enum
+    const type = typeString as PartnerType
+
+    console.log("🔍 Type conversion:")
+    console.log("  📝 typeString:", typeString, "Type:", typeof typeString)
+    console.log("  🎯 type:", type, "Type:", typeof type)
+    console.log("  ✅ Valid enum values:", ["technology", "manufacturing"])
+
+    // Handle logo file upload (for now, just store the filename)
+    // In a real implementation, you'd upload to a file storage service
+    let logo_url: string | null = null
+    if (logoFile) {
+      // For now, just use the filename as a placeholder
+      // In production, you'd upload to S3, Cloudinary, etc.
+      logo_url = `uploads/${logoFile.name}`
+      console.log("📁 Logo file received:", logoFile.name, "Size:", logoFile.size)
     }
 
     const partnerId = uuidv4()
 
-    // Create group in Okta (equivalent to Auth0 Organization)
+    // Create group in Auth0 (Organization)
     let orgId: string | undefined
     try {
-      const partner_name = `partner-${name.toLowerCase().replace(/\s+/g, "-")}`
-      const display_name = `Partner ${name}`
+      const partner_name = `${name.toLowerCase().replace(/\s+/g, "-")}`
+      const display_name = name
 
       const org = await auth0ManagementAPI.createOrganization({
         name: partner_name,
@@ -92,10 +117,17 @@ export async function POST(request: NextRequest) {
       orgId = org.id
       console.log(`🚀 Created organization: ${orgId} (${partner_name}) for partner: ${partnerId}`)
     } catch (error) {
-      console.error("Error creating Okta group:", error)
-      // Continue with partner creation even if group creation fails
-      // The group_id will be null in this case
+      console.error("Error creating Auth0 organization:", error)
+      // Continue with partner creation even if organization creation fails
+      // The organization_id will be null in this case
     }
+
+    console.log("🗄️ Creating partner in database with data:")
+    console.log("  🆔 ID:", partnerId)
+    console.log("  📛 Name:", name)
+    console.log("  🏷️ Type:", type, "Type:", typeof type)
+    console.log("  🏢 Org ID:", orgId)
+    console.log("  🖼️ Logo:", logo_url)
 
     const newPartner = await prisma.partner.create({
       data: {
@@ -113,13 +145,17 @@ export async function POST(request: NextRequest) {
     try {
       console.log(`Creating FGA tuples for partner: ${partnerId}`)
 
-      // 1. Create parent relationship: platform:main -> partner:PARTNERID (parent)
-      const parentTupleCreated = await writeTuple("platform:main", "parent", `partner:${partnerId}`)
+      // 1. Create parent relationship: platform:default -> partner:PARTNERID (parent)
+      const parentTupleCreated = await writeTuple(
+        "platform:default",
+        "parent",
+        `partner:${partnerId}`
+      )
 
       if (parentTupleCreated) {
-        console.log(`✅ Created FGA tuple: platform:main parent partner:${partnerId}`)
+        console.log(`✅ Created FGA tuple: platform:default parent partner:${partnerId}`)
       } else {
-        console.error(`❌ Failed to create FGA tuple: platform:main parent partner:${partnerId}`)
+        console.error(`❌ Failed to create FGA tuple: platform:default parent partner:${partnerId}`)
       }
     } catch (fgaError) {
       console.error("Failed to create FGA tuples:", fgaError)

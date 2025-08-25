@@ -1,51 +1,91 @@
-export type PartnerUser = {
-  id: string
-  partner_id: string
-  role: string
-  status: string
-  invited_at: Date | null
-  joined_at: Date | null
-  created_at: Date
-  email: string
-  display_name?: string
-  auth0_user_id?: string
-}
-
-export interface Partner {
-  id: string
-  name: string
-  type: "artist" | "merch_supplier"
-  logo_url?: string
-  organization_id?: string
-  created_at: string
-  userCanView?: boolean
-  userCanAdmin?: boolean
-  userCanManageMembers?: boolean
-}
-
-export interface Song {
-  id: string
-  name: string
-  genre: string
-  picture_url?: string
-  stream_count: number
-  created_at: string
-}
-
-export interface SKU {
-  id: string
-  name: string
-  category?: string
-  image_url?: string
-  status: "active" | "inactive"
-  created_at: string
-}
-
+// Unified User interface - represents all users regardless of access level
 export interface User {
   id: string
   email: string
-  display_name?: string
-  role: string
+  name: string
+  auth0_user_id: string
   created_at: string
-  auth0_user_id?: string
+  updated_at: string
+  partners: {
+    id: string
+    name: string
+    type: string
+    logo_url?: string
+    role: string
+    status: string
+    joined_at: string
+    updated_at?: string
+  }[]
+  // Summary statistics (for system users with multiple partners)
+  total_partners?: number
+  active_partners?: number
+  admin_roles?: number
+}
+
+// Partner interface
+export interface Partner {
+  id: string
+  name: string
+  type: "technology" | "manufacturing"
+  logo_url?: string
+  organization_id?: string
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+// Partner User interface (for the relationship table)
+export interface PartnerUser {
+  id: string
+  partner_id: string
+  user_id: string
+  role: "can_admin" | "can_manage_members" | "can_view"
+  status: "active" | "pending" | "inactive"
+  email: string
+  invited_by?: string
+  invited_at: string
+  joined_at?: string
+  last_login?: string
+  created_at: string
+  updated_at: string
+}
+
+// Client interface
+export interface Client {
+  id: string
+  partner_id: string
+  client_name: string
+  client_type: "native_mobile_android" | "native_mobile_ios" | "web" | "M2M"
+  client_id: string // Stores Auth0 client ID
+  picture_url?: string
+  created_at: string
+  status: string
+}
+
+// Document interface
+export interface Document {
+  id: string
+  partner_id: string
+  name: string
+  description?: string
+  status: string
+  created_at: string
+}
+
+// API Response interfaces
+export interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
+}
+
+export interface ApiResponse<T> {
+  data?: T
+  error?: string
+  message?: string
+  details?: string
 }

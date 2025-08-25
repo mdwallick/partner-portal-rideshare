@@ -5,7 +5,7 @@ export async function setupSuperAdmin(userId: string) {
     {
       user: `user:${userId}`,
       relation: "super_admin",
-      object: "platform:main",
+      object: "platform:default",
     },
   ]
 
@@ -33,7 +33,7 @@ export async function checkSuperAdminAccess(userId: string) {
       tuple_key: {
         user: `user:${userId}`,
         relation: "super_admin",
-        object: "platform:main",
+        object: "platform:default",
       },
       authorization_model_id: modelId,
     })

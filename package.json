@@ -1,5 +1,5 @@
 {
-  "name": "partner-portal",
+  "name": "partner-portal-rideshare",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -16,6 +16,12 @@
     "prisma:generate": "dotenv -e .env.local -- prisma generate",
     "prisma:studio": "dotenv -e .env.local -- prisma studio",
     "prisma:truncate": "dotenv -e .env.local -- tsx prisma/scripts/clear-db.ts",
+    "phase1:deploy-fga": "dotenv -e .env.local -- tsx scripts/deploy-fga-model.ts",
+    "phase1:init-fga": "dotenv -e .env.local -- tsx scripts/init-fga-tuples.ts",
+    "phase2:test-api": "dotenv -e .env.local -- tsx scripts/test-api-endpoints.ts",
+    "setup-super-admin": "dotenv -e .env.local -- tsx scripts/setup-super-admin.ts",
+    "find-user-id": "dotenv -e .env.local -- tsx scripts/find-user-id.ts",
+    "test-fga": "dotenv -e .env.local -- tsx scripts/test-fga-setup.ts",
     "prepare": "husky"
   },
   "husky": {

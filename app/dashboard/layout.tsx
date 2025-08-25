@@ -4,13 +4,30 @@ import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
-import { Home, Users, ShoppingBag, Settings, Menu, X, ChevronDown, LogOut } from "lucide-react"
+import {
+  Home,
+  Users,
+  ShoppingBag,
+  Settings,
+  Menu,
+  X,
+  ChevronDown,
+  LogOut,
+  Building2,
+  FileText,
+  Shield,
+  Cog,
+} from "lucide-react"
 
+// Navigation structure based on available routes
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Partners", href: "/dashboard/partners", icon: Users },
-  { name: "Products", href: "/dashboard/products", icon: ShoppingBag, disabled: true },
-  { name: "Users", href: "/dashboard/users", icon: Users, disabled: true },
+  { name: "Partners", href: "/dashboard/partners", icon: Building2, adminOnly: true },
+  { name: "Clients", href: "/dashboard/clients", icon: ShoppingBag, techOnly: true },
+  { name: "Documents", href: "/dashboard/documents", icon: FileText, manufacturingOnly: true },
+  { name: "Users", href: "/dashboard/users", icon: Users },
+  { name: "Admin", href: "/dashboard/admin", icon: Shield, adminOnly: true },
+  { name: "Settings", href: "/dashboard/settings", icon: Cog },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -19,7 +36,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [userPartner, setUserPartner] = useState<any>(null)
+  const [userRole, setUserRole] = useState<string>("")
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
+
+  // Fetch user's partner information and role
+  useEffect(() => {
+    if (user) {
+      fetchUserInfo()
+    }
+  }, [user])
+
+  const fetchUserInfo = async () => {
+    try {
+      // First check if user is a super admin
+      const superAdminResponse = await fetch("/api/test-permissions")
+      if (superAdminResponse.ok) {
+        const superAdminData = await superAdminResponse.json()
+        if (superAdminData.isSuperAdmin) {
+          setIsSuperAdmin(true)
+          setUserRole("sys_super_admin")
+          return // Super admins don't need partner info
+        }
+      }
+
+      // For non-super admins, fetch partner information
+      const partnerResponse = await fetch("/api/partners/me")
+      if (partnerResponse.ok) {
+        const partnerData = await partnerResponse.json()
+        setUserPartner(partnerData)
+
+        // Determine user role based on partner user relationship
+        if (partnerData) {
+          setUserRole(partnerData.role)
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user info:", error)
+    }
+  }
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -51,6 +107,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [])
+
+  // Filter navigation based on user role and partner type
+  const filteredNavigation = navigation.filter(item => {
+    if (item.adminOnly && userRole !== "can_admin" && !isSuperAdmin) return false
+    if (item.techOnly && userPartner?.type !== "technology") return false
+    if (item.manufacturingOnly && userPartner?.type !== "manufacturing") return false
+    return true
+  })
 
   if (isLoading) {
     return (
@@ -92,22 +156,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
 
+        {/* Partner Info or Super Admin Status */}
+        {isSuperAdmin ? (
+          <div className="px-4 py-3 border-b border-gray-700">
+            <div className="text-sm text-gray-400">System Role</div>
+            <div className="text-white font-medium">Super Administrator</div>
+            <div className="text-xs text-orange-500">Full System Access</div>
+          </div>
+        ) : userPartner ? (
+          <div className="px-4 py-3 border-b border-gray-700">
+            <div className="text-sm text-gray-400">Current Partner</div>
+            <div className="text-white font-medium">{userPartner.name}</div>
+            <div className="text-xs text-gray-500 capitalize">{userPartner.type}</div>
+          </div>
+        ) : null}
+
         <nav className="mt-8 px-4">
           <div className="space-y-1">
-            {navigation.map(item => {
+            {filteredNavigation.map(item => {
               const isActive = pathname === item.href
-              const isDisabled = item.disabled
-
-              if (isDisabled) {
-                return (
-                  <div key={item.name} className="opacity-50 cursor-not-allowed">
-                    <div className="group flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-500">
-                      <item.icon className="mr-3 h-5 w-5 text-gray-500" />
-                      {item.name}
-                    </div>
-                  </div>
-                )
-              }
 
               return (
                 <div key={item.name}>
@@ -179,6 +246,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="text-left">
                     <p className="text-sm font-medium text-white">{user.name || user.email}</p>
                     <p className="text-xs text-gray-400">{user.email}</p>
+                    {userRole && (
+                      <p className="text-xs text-orange-400 capitalize">
+                        {userRole.replace("_", " ")}
+                      </p>
+                    )}
                   </div>
                   <ChevronDown
                     className={`h-4 w-4 text-gray-400 transition-transform ${userMenuOpen ? "rotate-180" : ""}`}
@@ -200,7 +272,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       onClick={handleLogout}
                       className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 w-full"
                     >
-                      <LogOut className="mr-3 h-4 w-4 text-gray-400" />
+                      <LogOut className="mr-3 h-4 w-5 text-gray-400" />
                       Sign Out
                     </button>
                   </div>

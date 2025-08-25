@@ -49,6 +49,21 @@ export interface Auth0OrganizationSummary {
   updated_at?: string
 }
 
+export interface Auth0ClientSummary {
+  client_id: string
+  name: string
+  app_type?: string
+  token_endpoint_auth_method?: string
+  grant_types?: string[]
+  response_types?: string[]
+  callbacks?: string[]
+  allowed_logout_urls?: string[]
+  web_origins?: string[]
+  metadata?: JsonRecord
+  created_at?: string
+  updated_at?: string
+}
+
 function toUserSummary(u: any): Auth0UserSummary {
   return {
     id: u.user_id as string,
@@ -246,6 +261,113 @@ export class Auth0ManagementAPI {
     await this.mgmt.organizations.delete({ id: orgId } as any)
   }
 
+  // CLIENTS
+
+  async createClient(params: {
+    name: string
+    app_type: "native" | "spa" | "regular_web" | "non_interactive"
+    grant_types?: string[]
+    response_types?: string[]
+    callbacks?: string[]
+    allowed_logout_urls?: string[]
+    web_origins?: string[]
+    metadata?: JsonRecord
+  }): Promise<Auth0ClientSummary> {
+    const { data: c } = await this.mgmt.clients.create({
+      name: params.name,
+      app_type: params.app_type,
+      grant_types: params.grant_types || ["authorization_code", "refresh_token"],
+      response_types: params.response_types || ["code"],
+      callbacks: params.callbacks || [],
+      allowed_logout_urls: params.allowed_logout_urls || [],
+      web_origins: params.web_origins || [],
+      metadata: params.metadata,
+      token_endpoint_auth_method: "none", // For public clients
+    })
+    return {
+      client_id: c.client_id!,
+      name: c.name!,
+      app_type: c.app_type,
+      token_endpoint_auth_method: c.token_endpoint_auth_method,
+      grant_types: c.grant_types,
+      response_types: c.response_types,
+      callbacks: c.callbacks,
+      allowed_logout_urls: c.allowed_logout_urls,
+      web_origins: c.web_origins,
+      metadata: c.metadata,
+      created_at: c.created_at,
+      updated_at: c.updated_at,
+    }
+  }
+
+  async getClient(clientId: string): Promise<Auth0ClientSummary | null> {
+    try {
+      const { data: c } = await this.mgmt.clients.get({ client_id: clientId })
+      return {
+        client_id: c.client_id!,
+        name: c.name!,
+        app_type: c.app_type,
+        token_endpoint_auth_method: c.token_endpoint_auth_method,
+        grant_types: c.grant_types,
+        response_types: c.response_types,
+        callbacks: c.callbacks,
+        allowed_logout_urls: c.allowed_logout_urls,
+        web_origins: c.web_origins,
+        metadata: c.metadata,
+        created_at: c.created_at,
+        updated_at: c.updated_at,
+      }
+    } catch {
+      return null
+    }
+  }
+
+  async updateClient(
+    clientId: string,
+    updates: {
+      name?: string
+      app_type?: "native" | "spa" | "regular_web" | "non_interactive"
+      grant_types?: string[]
+      response_types?: string[]
+      callbacks?: string[]
+      allowed_logout_urls?: string[]
+      web_origins?: string[]
+      metadata?: JsonRecord
+    }
+  ): Promise<Auth0ClientSummary> {
+    const { data: c } = await this.mgmt.clients.update(
+      { client_id: clientId },
+      {
+        name: updates.name,
+        app_type: updates.app_type,
+        grant_types: updates.grant_types,
+        response_types: updates.response_types,
+        callbacks: updates.callbacks,
+        allowed_logout_urls: updates.allowed_logout_urls,
+        web_origins: updates.web_origins,
+        metadata: updates.metadata,
+      }
+    )
+    return {
+      client_id: c.client_id!,
+      name: c.name!,
+      app_type: c.app_type,
+      token_endpoint_auth_method: c.token_endpoint_auth_method,
+      grant_types: c.grant_types,
+      response_types: c.response_types,
+      callbacks: c.callbacks,
+      allowed_logout_urls: c.allowed_logout_urls,
+      web_origins: c.web_origins,
+      metadata: c.metadata,
+      created_at: c.created_at,
+      updated_at: c.updated_at,
+    }
+  }
+
+  async deleteClient(clientId: string): Promise<void> {
+    await this.mgmt.clients.delete({ client_id: clientId })
+  }
+
   // MEMBERSHIP HELPERS (optional)
 
   async inviteUserToOrganization(
@@ -260,6 +382,7 @@ export class Auth0ManagementAPI {
   }
 
   async addUserToOrganization(orgId: string, userId: string): Promise<void> {
+    console.log("in auth0-management.ts: Adding user to organization:", orgId, userId)
     await this.mgmt.organizations.addMembers({ id: orgId } as any, { members: [userId] } as any)
   }
 
@@ -318,6 +441,87 @@ export class Auth0ManagementAPI {
   // async deleteOrganizationLegacy(groupId: string): Promise<void> {
   //     await this.deleteOrganization(groupId);
   // }
+
+  // UTILITY METHODS
+
+  /**
+   * Generate a secure temporary password for new users
+   */
+  generateTemporaryPassword(): string {
+    const length = 16
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
+    let password = ""
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length))
+    }
+    return password
+  }
+
+  /**
+   * Send password reset email to user
+   */
+  async sendPasswordResetEmail(email: string): Promise<void> {
+    const connection = process.env.AUTH0_DB_CONNECTION || "Username-Password-Authentication"
+    await this.mgmt.tickets.createPasswordChange({
+      user_id: email, // Auth0 accepts email for password reset
+      connection_id: connection,
+      result_url: `${process.env.NEXT_PUBLIC_APP_URL}/login?message=password-reset-sent`,
+    })
+  }
+
+  /**
+   * Complete user setup process: create user, add to organization, and send credentials
+   */
+  async setupNewUser(params: {
+    email: string
+    name: string
+    organizationId: string
+    role: string
+    partnerId: string
+    metadata?: Record<string, any>
+  }): Promise<{
+    auth0UserId: string
+    temporaryPassword: string
+    user: Auth0UserSummary
+  }> {
+    try {
+      // 1. Create user in Auth0
+      const temporaryPassword = this.generateTemporaryPassword()
+      const user = await this.createUser({
+        email: params.email,
+        name: params.name,
+        password: temporaryPassword,
+        user_metadata: {
+          partner_id: params.partnerId,
+          role: params.role,
+          setup_date: new Date().toISOString(),
+          ...params.metadata,
+        },
+        app_metadata: {
+          partner_id: params.partnerId,
+          role: params.role,
+          organization_id: params.organizationId,
+        },
+      })
+
+      // 2. Add user to organization
+      await this.addUserToOrganization(params.organizationId, user.id)
+
+      // 3. Send password reset email (more secure than temporary password)
+      await this.sendPasswordResetEmail(params.email)
+
+      return {
+        auth0UserId: user.id,
+        temporaryPassword, // Return for logging/debugging
+        user,
+      }
+    } catch (error) {
+      console.error("Error setting up new user:", error)
+      throw new Error(
+        `Failed to setup new user: ${error instanceof Error ? error.message : "Unknown error"}`
+      )
+    }
+  }
 }
 
 export const auth0ManagementAPI = new Auth0ManagementAPI()

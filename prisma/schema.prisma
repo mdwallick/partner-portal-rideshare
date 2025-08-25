@@ -10,18 +10,23 @@ datasource db {
 }
 
 model Partner {
-  id             String   @id @default(uuid())
-  name           String
-  type           String
-  logo_url       String?  @db.Text
+  id              String   @id @default(uuid())
+  name            String
+  type            PartnerType
+  logo_url        String?  @db.Text
   organization_id String? @db.Text
-  status         String   @default("active")
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  status          String   @default("active")
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
-  songs          Song[]
-  skus           Sku[]
-  partnerUsers   PartnerUser[]
+  client_ids      ClientId[]
+  documents       Document[]
+  partnerUsers    PartnerUser[]
+}
+
+enum PartnerType {
+  technology
+  manufacturing
 }
 
 model User {
@@ -36,18 +41,19 @@ model User {
 }
 
 model PartnerUser {
-  id         String      @id @default(uuid())
-  partner    Partner     @relation(fields: [partner_id], references: [id])
+  id         String            @id @default(uuid())
+  partner    Partner           @relation(fields: [partner_id], references: [id])
   partner_id String
-  user       User        @relation(fields: [user_id], references: [id])
+  user       User              @relation(fields: [user_id], references: [id])
   user_id    String
-  role       PartnerRole @default(can_view)
+  role       PartnerRole       @default(can_view)
   status     PartnerUserStatus @default(active)
   invited_by String?
-  invited_at DateTime   @default(now())
+  invited_at DateTime          @default(now())
   joined_at  DateTime?
-  created_at DateTime   @default(now())
-  updated_at DateTime   @updatedAt
+  last_login DateTime?
+  created_at DateTime          @default(now())
+  updated_at DateTime          @updatedAt
   email      String
 
   @@unique([partner_id, user_id])
@@ -65,32 +71,34 @@ enum PartnerUserStatus {
   inactive
 }
 
-model Song {
+model ClientId {
+  id          String     @id @default(uuid())
+  partner     Partner    @relation(fields: [partner_id], references: [id])
+  partner_id  String
+  client_name String
+  client_type ClientType
+  client_id   String     @unique // This field now stores the Auth0 client ID
+  picture_url String?    @db.Text
+  created_at  DateTime   @default(now())
+  status      String     @default("active")
+}
+
+enum ClientType {
+  native_mobile_android
+  native_mobile_ios
+  web
+  M2M
+}
+
+model Document {
   id          String   @id @default(uuid())
   partner     Partner  @relation(fields: [partner_id], references: [id])
   partner_id  String
   name        String
-  genre       String?
-  duration_s  Int?
-  play_count  Int      @default(0)
+  description String?
+  status      String   @default("active")
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
-
-  @@index([partner_id])
-  @@unique([partner_id, name]) // optional: ensure unique song names per artist
-}
-
-model Sku {
-  id               String   @id @default(uuid())
-  partner          Partner  @relation(fields: [partner_id], references: [id])
-  partner_id       String
-  name             String
-  category         String?
-  series           String?
-  product_image_url String?
-  status           String   @default("active")
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
 }
 
 model AuditLog {
