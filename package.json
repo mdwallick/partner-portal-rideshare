@@ -21,7 +21,8 @@
     "phase2:test-api": "dotenv -e .env.local -- tsx scripts/test-api-endpoints.ts",
     "setup-super-admin": "dotenv -e .env.local -- tsx scripts/setup-super-admin.ts",
     "find-user-id": "dotenv -e .env.local -- tsx scripts/find-user-id.ts",
-    "test-fga": "dotenv -e .env.local -- tsx scripts/test-fga-setup.ts"
+    "test-fga": "dotenv -e .env.local -- tsx scripts/test-fga-setup.ts",
+    "test-batch-fga": "dotenv -e .env.local -- tsx scripts/test-batch-fga-operations.js"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.9.0",

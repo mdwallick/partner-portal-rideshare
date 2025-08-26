@@ -132,7 +132,6 @@ Enable secure access for external partners (technology partners and manufacturin
 ### 4.1 Auth (via Auth0)
 
 - `GET /login` → Auth0 Hosted Login
-
   - Redirect user to Auth0's hosted login page
   - Handle OAuth2/OIDC provider integrations
   - Await redirect back to configured callback URL
@@ -140,14 +139,12 @@ Enable secure access for external partners (technology partners and manufacturin
 ### 4.2 Partner
 
 - `GET /api/partners/me`
-
   - Validate JWT access token via Auth0
   - Extract partner from token context
   - Look up partner metadata in DB
   - Return partner name, type, and user role
 
 - `POST /api/partners/users` → Invite partner user
-
   - Validate JWT access token via Auth0
   - Validate inviter permissions via FGA (`partner_admin`)
   - Validate email and role input
@@ -155,14 +152,12 @@ Enable secure access for external partners (technology partners and manufacturin
   - Create tuple in FGA linking user to partner
 
 - `DELETE /api/partners/users/:user_id` → Remove partner user
-
   - Validate JWT access token via Auth0
   - Validate requester permissions via FGA
   - Delete user-partner tuple in FGA
   - (Optional) Deactivate user from Auth0 tenant
 
 - `POST /api/partners` → Create partner (requires name & type, returns `partner_id`)
-
   - Validate JWT access token via Auth0
   - Validate role via FGA (`sme_admin` or `sme_super_admin`)
   - Validate payload: name and type
@@ -170,13 +165,11 @@ Enable secure access for external partners (technology partners and manufacturin
   - Generate and return new `partner_id`
 
 - `PUT /api/partners/:partner_id` → Update name and/or logo URL
-
   - Validate JWT access token via Auth0
   - Validate edit rights via FGA
   - Update database fields accordingly
 
 - `GET /api/partners` → List partners (includes name, type, logo URL if any, created_at)
-
   - Validate JWT access token via Auth0
   - Filter by `sme_admin` assignment or `sme_super_admin` via FGA
   - Filter by `sme_admin` assignment or `sme_super_admin`
@@ -185,13 +178,11 @@ Enable secure access for external partners (technology partners and manufacturin
 ### 4.3 Clients
 
 - `GET /api/clients` → List all clients for a partner
-
   - Validate JWT access token via Auth0
   - Query DB for albums linked to that partner
   - Return client list with metadata
 
 - `POST /api/client` → Registers a client
-
   - Validate JWT access token via Auth0
   - Validate partner permissions via FGA
   - Validate name input
@@ -200,14 +191,12 @@ Enable secure access for external partners (technology partners and manufacturin
   - Return `album_id`
 
 - `PUT /api/clients/:client_id`
-
   - Validate JWT access token via Auth0
   - Validate edit permission via FGA
   - Allow updates to client name, type, and optional picture URL
   - Update DB fields accordingly
 
 - `DELETE /api/clients/:client_id`
-
   - Validate JWT access token via Auth0
   - Validate revoke permission via FGA
   - Mark client as inactive or deleted
@@ -215,13 +204,11 @@ Enable secure access for external partners (technology partners and manufacturin
 ### 4.4 Documents
 
 - `GET /api/documents`
-
   - Validate JWT access token via Auth0
   - Validate that user is an artist partner
   - Return document list with metadata
 
 - `POST /api/documents`
-
   - Validate JWT access token via Auth0
   - Validate artist permissions via FGA
   - Validate input name, validate input description
@@ -229,13 +216,11 @@ Enable secure access for external partners (technology partners and manufacturin
   - Return `document_id`
 
 - `PUT /api/documents/:document_id`
-
   - Validate JWT access token via Auth0
   - Validate document ownership via FGA
   - Update metadata fields in DB
 
 - `DELETE /api/documents/:document_id`
-
   - Validate JWT access token via Auth0
   - Validate document permission via FGA
   - Soft delete document (mark as archived)
