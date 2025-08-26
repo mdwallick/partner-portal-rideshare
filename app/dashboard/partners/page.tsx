@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
+import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import {
   Building2,
   Plus,
@@ -17,49 +18,22 @@ import {
   Cog,
 } from "lucide-react"
 import Link from "next/link"
-
-interface Partner {
-  id: string
-  name: string
-  type: "technology" | "manufacturing" | "fleet_maintenance"
-  logo_url?: string
-  created_at: string
-  status: string
-}
+import { Partner } from "@/lib/types"
 
 export default function PartnersPage() {
   const { user, isLoading } = useUser()
+  const { isSuperAdmin } = useSuperAdmin()
   const [partners, setPartners] = useState<Partner[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState<string>("all")
   const [error, setError] = useState<string | null>(null)
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   useEffect(() => {
     if (user) {
-      checkUserRole()
+      fetchPartners()
     }
   }, [user])
-
-  const checkUserRole = async () => {
-    try {
-      // Check if user is a super admin
-      const superAdminResponse = await fetch("/api/test-permissions")
-      if (superAdminResponse.ok) {
-        const superAdminData = await superAdminResponse.json()
-        if (superAdminData.isSuperAdmin) {
-          setIsSuperAdmin(true)
-        }
-      }
-
-      // Fetch partners
-      await fetchPartners()
-    } catch (error) {
-      console.error("Error checking user role:", error)
-      await fetchPartners()
-    }
-  }
 
   const fetchPartners = async () => {
     try {

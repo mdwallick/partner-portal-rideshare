@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
+import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import {
   Home,
   Users,
@@ -47,36 +48,28 @@ const navigation = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useUser()
+  const { isSuperAdmin } = useSuperAdmin()
   const pathname = usePathname()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [userPartner, setUserPartner] = useState<any>(null)
   const [userRole, setUserRole] = useState<string | null>("")
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
   // Fetch user's partner information and role
   useEffect(() => {
-    if (user) {
+    if (user && !isSuperAdmin) {
       // console.log("👤 User authenticated, fetching partner info...")
       fetchUserInfo()
+    } else if (user && isSuperAdmin) {
+      // Super admins don't need partner info
+      setUserRole("sys_super_admin")
     }
-  }, [user])
+  }, [user, isSuperAdmin])
 
   const fetchUserInfo = async () => {
     try {
-      // First check if user is a super admin
-      const superAdminResponse = await fetch("/api/test-permissions")
-      if (superAdminResponse.ok) {
-        const superAdminData = await superAdminResponse.json()
-        if (superAdminData.isSuperAdmin) {
-          setIsSuperAdmin(true)
-          setUserRole("sys_super_admin")
-          return // Super admins don't need partner info
-        }
-      }
-
       // For non-super admins, fetch partner information
       const partnerResponse = await fetch("/api/partners/me")
       if (partnerResponse.ok) {

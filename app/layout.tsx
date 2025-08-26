@@ -3,6 +3,7 @@ import { Auth0Provider } from "@auth0/nextjs-auth0"
 import "./globals.css"
 import TokenDebugger from "./components/TokenDebugger"
 import NavigationLogger from "./components/NavigationLogger"
+import { SuperAdminProvider } from "./contexts/SuperAdminContext"
 
 export const metadata = {
   title: process.env.NEXT_PUBLIC_APP_NAME || "Partner Portal",
@@ -18,10 +19,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="h-full bg-waymo-primary">
       <body className="min-h-screen bg-waymo-primary">
         <Auth0Provider>
-          {children}
-          <Toaster position="top-right" />
-          <TokenDebugger />
-          <NavigationLogger />
+          <SuperAdminProvider>
+            {children}
+            <Toaster position="top-right" />
+            <TokenDebugger />
+            <NavigationLogger />
+          </SuperAdminProvider>
         </Auth0Provider>
       </body>
     </html>

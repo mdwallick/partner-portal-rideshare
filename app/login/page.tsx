@@ -72,13 +72,13 @@ function LoginContent() {
             </div>
           </div>
 
-          <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+          {/* <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
             <a href="/auth/login">
               <button className="w-full text-lg py-3 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
                 Sign In with Password
               </button>
             </a>
-          </div>
+          </div> */}
 
           <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
             <a href="/auth/login?connection=email">
