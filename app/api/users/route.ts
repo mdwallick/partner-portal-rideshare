@@ -233,8 +233,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has permission to create users in this partner
-    // Use the permission checker from earlier in the request
-    const isSuperAdmin = permissionChecker.getSuperAdminStatus()
+    const permissionChecker = createPermissionChecker()
+    const isSuperAdmin = await permissionChecker.checkSuperAdmin(user.sub)
     if (!isSuperAdmin) {
       // Check if user can manage members in the specified partner
       const { checkPartnerPermission } = await import("@/lib/fga")
@@ -366,6 +366,134 @@ export async function POST(request: NextRequest) {
       {
         error: "Failed to create user. Please try again or contact support.",
         details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/users - Delete a user by ID
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await auth0.getSession()
+    const user = session?.user
+
+    if (!user?.sub) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Get the user ID to delete from query parameters
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get("id")
+
+    if (!userId) {
+      return NextResponse.json({ error: "User ID is required" }, { status: 400 })
+    }
+
+    // Create permission checker for this request
+    const permissionChecker = createPermissionChecker()
+
+    // Check if user is a super admin
+    const isSuperAdmin = await permissionChecker.checkSuperAdmin(user.sub)
+
+    if (!isSuperAdmin) {
+      // Check if the requesting user has admin access to any partners that the target user belongs to
+      const partnerPermissions = await batchListObjects(
+        user.sub,
+        ["can_admin", "can_manage_members"],
+        "partner"
+      )
+
+      const userAdminPartners = Array.from(
+        new Set([...partnerPermissions.can_admin, ...partnerPermissions.can_manage_members])
+      )
+
+      if (userAdminPartners.length === 0) {
+        return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 })
+      }
+
+      // Check if the target user belongs to any of the requesting user's admin partners
+      const targetUserPartners = await prisma.partnerUser.findMany({
+        where: {
+          user_id: userId,
+          partner_id: { in: userAdminPartners },
+        },
+        select: { partner_id: true },
+      })
+
+      if (targetUserPartners.length === 0) {
+        return NextResponse.json({ error: "User not found or access denied" }, { status: 404 })
+      }
+    }
+
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        partnerUsers: true,
+      },
+    })
+
+    if (!existingUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    // Delete all partner user relationships first to avoid foreign key constraint violations
+    if (existingUser.partnerUsers.length > 0) {
+      // Delete FGA tuples for all partner relationships
+      const { deleteTuple } = await import("@/lib/fga")
+
+      for (const partnerUser of existingUser.partnerUsers) {
+        try {
+          await deleteTuple(
+            `user:${existingUser.auth0_user_id}`,
+            partnerUser.role,
+            `partner:${partnerUser.partner_id}`
+          )
+        } catch (fgaError) {
+          console.error(
+            `Failed to delete FGA tuple for partner ${partnerUser.partner_id}:`,
+            fgaError
+          )
+          // Continue with deletion even if FGA cleanup fails
+        }
+      }
+
+      // Delete partner user relationships from database
+      await prisma.partnerUser.deleteMany({
+        where: {
+          user_id: userId,
+        },
+      })
+    }
+
+    // Delete user from Auth0
+    try {
+      const { auth0ManagementAPI } = await import("@/lib/auth0-management")
+      await auth0ManagementAPI.deleteUser(existingUser.auth0_user_id)
+    } catch (auth0Error) {
+      console.error("Failed to delete user from Auth0:", auth0Error)
+      // Continue with database deletion even if Auth0 deletion fails
+    }
+
+    // Now delete the user from local database
+    await prisma.user.delete({
+      where: { id: userId },
+    })
+
+    return NextResponse.json({
+      message: "User deleted successfully",
+      deleted_user: {
+        id: existingUser.id,
+        email: existingUser.email,
+        display_name: existingUser.display_name,
+      },
+    })
+  } catch (error) {
+    console.error("Error deleting user:", error)
+    return NextResponse.json(
+      {
+        error: "Internal server error",
       },
       { status: 500 }
     )

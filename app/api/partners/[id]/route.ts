@@ -224,7 +224,7 @@ export async function DELETE(
 
     // Check if user has platform-level super admin access
     const hasSuperAdminAccess = await checkPlatformPermission(
-      `user:${user?.sub}`,
+      user?.sub || "",
       "PLATFORM_SUPER_ADMIN"
     )
 

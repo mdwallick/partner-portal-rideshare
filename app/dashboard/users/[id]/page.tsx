@@ -102,8 +102,8 @@ export default function UserDetailsPage() {
 
     try {
       setDeleting(true)
-      console.log(`🗑️ Deleting user from: /api/users/${userId}`)
-      const response = await fetch(`/api/users/${userId}`, {
+      console.log(`🗑️ Deleting user from unified API: /api/users?id=${userId}`)
+      const response = await fetch(`/api/users?id=${userId}`, {
         method: "DELETE",
       })
 

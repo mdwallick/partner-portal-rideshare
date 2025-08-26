@@ -136,7 +136,7 @@ export default function UserDetailsPage() {
     setDeleting(true)
 
     try {
-      const response = await fetch(`/api/partners/${partnerId}/users/${userId}`, {
+      const response = await fetch(`/api/users?id=${userId}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       })
