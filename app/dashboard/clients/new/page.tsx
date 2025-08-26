@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
+import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import {
   Smartphone,
   Save,
@@ -23,6 +24,7 @@ interface ClientFormData {
 
 export default function NewClientPage() {
   const { user, isLoading } = useUser()
+  const { isSuperAdmin } = useSuperAdmin()
   const router = useRouter()
   const [formData, setFormData] = useState<ClientFormData>({
     name: "",
@@ -35,6 +37,8 @@ export default function NewClientPage() {
   const [createdClient, setCreatedClient] = useState<any>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [copyNotification, setCopyNotification] = useState(false)
+  const [partners, setPartners] = useState<any[]>([])
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string>("")
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -59,6 +63,30 @@ export default function NewClientPage() {
     setFormData(prev => ({ ...prev, picture_url: "" }))
   }
 
+  // Fetch partners for super admin to select from
+  useEffect(() => {
+    if (isSuperAdmin) {
+      fetchPartners()
+    }
+  }, [isSuperAdmin])
+
+  const fetchPartners = async () => {
+    try {
+      const response = await fetch("/api/partners")
+      if (response.ok) {
+        const data = await response.json()
+        // Filter to only technology partners
+        const techPartners = data.partners.filter((partner: any) => partner.type === "technology")
+        setPartners(techPartners)
+        if (techPartners.length > 0) {
+          setSelectedPartnerId(techPartners[0].id)
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching partners:", error)
+    }
+  }
+
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
       setError("Client name is required")
@@ -70,6 +98,10 @@ export default function NewClientPage() {
     }
     if (!formData.type) {
       setError("Client type is required")
+      return false
+    }
+    if (isSuperAdmin && !selectedPartnerId) {
+      setError("Partner selection is required")
       return false
     }
     return true
@@ -89,6 +121,7 @@ export default function NewClientPage() {
         name: formData.name.trim(),
         type: formData.type,
         picture_url: formData.picture_url || null,
+        ...(isSuperAdmin && { partnerId: selectedPartnerId }),
       }
 
       const response = await fetch("/api/clients", {
@@ -398,6 +431,32 @@ export default function NewClientPage() {
               Enter the URL of the logo image. The image will be displayed as a preview above.
             </p>
           </div>
+
+          {/* Partner Selection (Super Admin Only) */}
+          {isSuperAdmin && (
+            <div>
+              <label htmlFor="partnerId" className="block text-sm font-medium text-gray-300 mb-2">
+                Partner *
+              </label>
+              <select
+                id="partnerId"
+                value={selectedPartnerId}
+                onChange={e => setSelectedPartnerId(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                required
+              >
+                <option value="">Select a partner</option>
+                {partners.map(partner => (
+                  <option key={partner.id} value={partner.id}>
+                    {partner.name} ({partner.type})
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-sm text-gray-500">
+                Select the technology partner that will own this client
+              </p>
+            </div>
+          )}
 
           {/* Submit Button */}
           <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-700">

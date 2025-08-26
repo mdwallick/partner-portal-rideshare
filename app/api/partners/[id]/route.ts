@@ -248,6 +248,20 @@ export async function DELETE(
       select: { user_id: true, role: true },
     })
 
+    // First, delete all partner metro area records for this partner
+    console.log(`🗺️ Deleting metro area assignments for partner: ${partnerId}`)
+    const deletedMetroAreas = await prisma.partnerMetroArea.deleteMany({
+      where: { partner_id: partnerId },
+    })
+    console.log(`✅ Deleted ${deletedMetroAreas.count} metro area assignments`)
+
+    // Delete partner manufacturing capabilities if they exist
+    console.log(`🏭 Deleting manufacturing capabilities for partner: ${partnerId}`)
+    const deletedCapabilities = await prisma.partnerManufacturingCapabilities.deleteMany({
+      where: { partner_id: partnerId },
+    })
+    console.log(`✅ Deleted ${deletedCapabilities.count} manufacturing capability records`)
+
     // Delete the partner from the database
     await prisma.partner.delete({ where: { id: partnerId } })
 

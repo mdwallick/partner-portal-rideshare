@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
+import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import {
   Users,
   Plus,
@@ -29,6 +30,7 @@ interface Client {
 
 export default function ClientsPage() {
   const { user, isLoading } = useUser()
+  const { isSuperAdmin } = useSuperAdmin()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -39,9 +41,16 @@ export default function ClientsPage() {
 
   useEffect(() => {
     if (user) {
-      checkPartnerType()
+      if (isSuperAdmin) {
+        // Super admins can access clients directly
+        setIsTechnologyPartner(true)
+        fetchClients()
+        setCheckingAccess(false)
+      } else {
+        checkPartnerType()
+      }
     }
-  }, [user])
+  }, [user, isSuperAdmin])
 
   const checkPartnerType = async () => {
     try {

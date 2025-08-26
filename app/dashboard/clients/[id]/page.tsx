@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
+import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import {
   Smartphone,
   Edit,
@@ -32,6 +33,7 @@ interface Client {
 
 export default function ClientDetailsPage() {
   const { user, isLoading } = useUser()
+  const { isSuperAdmin } = useSuperAdmin()
   const params = useParams()
   const router = useRouter()
   const clientId = params.id as string

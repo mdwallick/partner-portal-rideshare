@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
-import { Building2, Save, X, Globe, Shield, AlertTriangle, CheckCircle, Cog } from "lucide-react"
+import { Save, X, Globe, Shield, AlertTriangle, CheckCircle, Cog } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 interface PartnerFormData {
   name: string
@@ -182,7 +183,7 @@ export default function NewPartnerPage() {
       })
 
       if (response.ok) {
-        const result = await response.json()
+        // const result = await response.json()
         setSuccess(true)
 
         // Redirect to partner list after a short delay
@@ -401,7 +402,7 @@ export default function NewPartnerPage() {
               {logoPreview && (
                 <div className="flex items-center space-x-4">
                   <div className="relative">
-                    <img
+                    <Image
                       src={logoPreview}
                       alt="Logo preview"
                       className="w-20 h-20 rounded-lg object-cover bg-gray-700"

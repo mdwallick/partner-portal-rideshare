@@ -3,22 +3,10 @@
 import { useEffect, useState } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
-import {
-  Building2,
-  Plus,
-  Search,
-  Filter,
-  Edit,
-  Eye,
-  Users,
-  Calendar,
-  Globe,
-  Shield,
-  MoreVertical,
-  Cog,
-} from "lucide-react"
+import { Building2, Plus, Search, Filter, Edit, Eye, Users, Globe, Shield, Cog } from "lucide-react"
 import Link from "next/link"
 import { Partner } from "@/lib/types"
+import Image from "next/image"
 
 export default function PartnersPage() {
   const { user, isLoading } = useUser()
@@ -210,7 +198,7 @@ export default function PartnersPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     {partner.logo_url ? (
-                      <img
+                      <Image
                         src={partner.logo_url}
                         alt={partner.name}
                         className="w-12 h-12 rounded-lg object-cover bg-gray-600"

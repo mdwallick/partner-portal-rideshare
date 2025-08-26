@@ -27,13 +27,13 @@ export default function UserDetailsPage() {
   const userId = params.id as string
 
   const [userData, setUserData] = useState<UserType | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [copied, setCopied] = useState(false)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
-  const [currentPartner, setCurrentPartner] = useState<any>(null)
+  const [_currentPartner, setCurrentPartner] = useState<any>(null)
 
   useEffect(() => {
     if (user) {
@@ -184,18 +184,18 @@ export default function UserDetailsPage() {
     }
   }
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "active":
-        return "Active"
-      case "inactive":
-        return "Inactive"
-      case "pending":
-        return "Pending Invitation"
-      default:
-        return "Unknown"
-    }
-  }
+  // const getStatusText = (status: string) => {
+  //   switch (status) {
+  //     case "active":
+  //       return "Active"
+  //     case "inactive":
+  //       return "Inactive"
+  //     case "pending":
+  //       return "Pending Invitation"
+  //     default:
+  //       return "Unknown"
+  //   }
+  // }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -205,15 +205,15 @@ export default function UserDetailsPage() {
     })
   }
 
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
+  // const formatDateTime = (dateString: string) => {
+  //   return new Date(dateString).toLocaleDateString("en-US", {
+  //     year: "numeric",
+  //     month: "long",
+  //     day: "numeric",
+  //     hour: "2-digit",
+  //     minute: "2-digit",
+  //   })
+  // }
 
   if (isLoading) {
     return (
@@ -440,7 +440,7 @@ export default function UserDetailsPage() {
         <div className="bg-gray-800 rounded-lg p-6 mb-8">
           <h3 className="text-lg font-semibold text-white mb-4">Partner Relationships</h3>
           <div className="space-y-4">
-            {userData.partners.map((partner, index) => (
+            {userData.partners.map(partner => (
               <div
                 key={partner.id}
                 className="flex items-center justify-between p-4 bg-gray-700 rounded-lg"

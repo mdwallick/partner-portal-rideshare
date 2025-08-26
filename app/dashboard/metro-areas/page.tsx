@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useRouter } from "next/navigation"
-import { Plus, Edit, Trash2, MapPin, Plane, Save, X } from "lucide-react"
+import { Plus, Edit, Trash2, MapPin, Plane, Save } from "lucide-react"
 import Link from "next/link"
 
 interface MetroArea {
@@ -207,7 +207,7 @@ export default function MetroAreasPage() {
       <div className="text-white p-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-          <p className="text-gray-400">You don't have permission to access this page.</p>
+          <p className="text-gray-400">You don&apos;t have permission to access this page.</p>
         </div>
       </div>
     )

@@ -1,5 +1,3 @@
-// Prisma schema reflecting current tables used in the app
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,67 +8,118 @@ datasource db {
 }
 
 model Partner {
-  id              String   @id @default(uuid())
-  name            String
-  type            PartnerType
-  logo_url        String?  @db.Text
-  organization_id String? @db.Text
-  status          String   @default("active")
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
-
-  client_ids      ClientId[]
-  documents       Document[]
-  partnerUsers    PartnerUser[]
-  metroAreas      PartnerMetroArea[]
+  id                        String                            @id @default(uuid())
+  name                      String
+  type                      PartnerType
+  logo_url                  String?
+  organization_id           String?
+  status                    String                            @default("active")
+  created_at                DateTime                          @default(now())
+  updated_at                DateTime                          @updatedAt
+  client_ids                ClientId[]
+  documents                 Document[]
   manufacturingCapabilities PartnerManufacturingCapabilities?
-}
-
-enum PartnerType {
-  technology
-  manufacturing
-  fleet_maintenance
+  metroAreas                PartnerMetroArea[]
+  partnerUsers              PartnerUser[]
 }
 
 model PartnerManufacturingCapabilities {
-  id                    String   @id @default(uuid())
-  partner               Partner  @relation(fields: [partner_id], references: [id])
-  partner_id            String   @unique // One-to-one relationship
-  hardware_sensors      Boolean  @default(false)
-  hardware_parts        Boolean  @default(false)
-  software_firmware     Boolean  @default(false)
-  created_at            DateTime @default(now())
-  updated_at            DateTime @updatedAt
+  id                String   @id @default(uuid())
+  partner_id        String   @unique
+  hardware_sensors  Boolean  @default(false)
+  hardware_parts    Boolean  @default(false)
+  software_firmware Boolean  @default(false)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  partner           Partner  @relation(fields: [partner_id], references: [id])
 }
 
 model User {
-  id            String   @id @default(uuid())
-  auth0_user_id String   @unique
-  email         String   @unique
+  id            String        @id @default(uuid())
+  auth0_user_id String        @unique
+  email         String        @unique
   display_name  String?
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
-
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
   partnerUsers  PartnerUser[]
 }
 
 model PartnerUser {
   id         String            @id @default(uuid())
-  partner    Partner           @relation(fields: [partner_id], references: [id])
   partner_id String
-  user       User              @relation(fields: [user_id], references: [id])
   user_id    String
   role       PartnerRole       @default(can_view)
   status     PartnerUserStatus @default(active)
   invited_by String?
   invited_at DateTime          @default(now())
   joined_at  DateTime?
-  last_login DateTime?
   created_at DateTime          @default(now())
   updated_at DateTime          @updatedAt
   email      String
+  last_login DateTime?
+  partner    Partner           @relation(fields: [partner_id], references: [id])
+  user       User              @relation(fields: [user_id], references: [id])
 
   @@unique([partner_id, user_id])
+}
+
+model ClientId {
+  id          String     @id @default(uuid())
+  partner_id  String
+  client_name String
+  client_type ClientType
+  client_id   String     @unique
+  created_at  DateTime   @default(now())
+  status      String     @default("active")
+  picture_url String?
+  partner     Partner    @relation(fields: [partner_id], references: [id])
+}
+
+model Document {
+  id          String   @id @default(uuid())
+  partner_id  String
+  name        String
+  status      String   @default("active")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  description String?
+  partner     Partner  @relation(fields: [partner_id], references: [id])
+}
+
+model MetroArea {
+  id           String             @id @default(uuid())
+  name         String
+  airport_code String             @unique
+  created_at   DateTime           @default(now())
+  updated_at   DateTime           @updatedAt
+  partners     PartnerMetroArea[]
+}
+
+model PartnerMetroArea {
+  id            String    @id @default(uuid())
+  partner_id    String
+  metro_area_id String
+  created_at    DateTime  @default(now())
+  metro_area    MetroArea @relation(fields: [metro_area_id], references: [id])
+  partner       Partner   @relation(fields: [partner_id], references: [id])
+
+  @@unique([partner_id, metro_area_id])
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  user_id       String?
+  action        String
+  resource_type String
+  resource_id   String
+  details       Json?
+  created_at    DateTime @default(now())
+}
+
+enum PartnerType {
+  technology
+  manufacturing
+  fleet_maintenance
 }
 
 enum PartnerRole {
@@ -85,63 +134,9 @@ enum PartnerUserStatus {
   inactive
 }
 
-model ClientId {
-  id          String     @id @default(uuid())
-  partner     Partner    @relation(fields: [partner_id], references: [id])
-  partner_id  String
-  client_name String
-  client_type ClientType
-  client_id   String     @unique // This field now stores the Auth0 client ID
-  picture_url String?    @db.Text
-  created_at  DateTime   @default(now())
-  status      String     @default("active")
-}
-
 enum ClientType {
   native_mobile_android
   native_mobile_ios
   web
   M2M
-}
-
-model Document {
-  id          String   @id @default(uuid())
-  partner     Partner  @relation(fields: [partner_id], references: [id])
-  partner_id  String
-  name        String
-  description String?
-  status      String   @default("active")
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-}
-
-model MetroArea {
-  id           String   @id @default(uuid())
-  name         String
-  airport_code String   @unique
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-
-  partners PartnerMetroArea[]
-}
-
-model PartnerMetroArea {
-  id           String   @id @default(uuid())
-  partner      Partner  @relation(fields: [partner_id], references: [id])
-  partner_id   String
-  metro_area   MetroArea @relation(fields: [metro_area_id], references: [id])
-  metro_area_id String
-  created_at   DateTime @default(now())
-
-  @@unique([partner_id, metro_area_id])
-}
-
-model AuditLog {
-  id            String   @id @default(uuid())
-  user_id       String?
-  action        String
-  resource_type String
-  resource_id   String
-  details       Json?
-  created_at    DateTime @default(now())
 }

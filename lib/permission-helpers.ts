@@ -1,5 +1,3 @@
-import { checkPlatformPermission } from "./fga"
-
 /**
  * Consolidated permission checker that reduces redundant FGA calls
  * by checking super admin status once and caching the result
@@ -190,28 +188,34 @@ export async function batchCheckPermissions(
     const { fgaClient, getLatestAuthorizationModelId } = await import("./fga")
     const modelId = await getLatestAuthorizationModelId()
 
-    // Use FGA's batch check API
-    const response = await fgaClient.batchCheck({
-      authorization_model_id: modelId,
-      checks: checks.map(check => ({
-        tuple_key: {
-          user: check.user,
-          relation: check.relation,
-          object: check.object,
-        },
-      })),
+    // Use FGA's batch check API (check multiple permissions in parallel)
+    const checkPromises = checks.map(async check => {
+      try {
+        const allowed = await fgaClient.check({
+          authorization_model_id: modelId,
+          tuple_key: {
+            user: check.user,
+            relation: check.relation,
+            object: check.object,
+          },
+        })
+        return { check, allowed: allowed.allowed || false }
+      } catch (error) {
+        console.error(`Check failed for ${check.user}:${check.relation}:${check.object}:`, error)
+        return { check, allowed: false }
+      }
     })
 
-    const results: Record<string, boolean> = {}
+    const results = await Promise.all(checkPromises)
+    const resultsMap: Record<string, boolean> = {}
 
     // Map responses back to the original checks
-    response.responses?.forEach((checkResponse, index) => {
-      const check = checks[index]
+    results.forEach(({ check, allowed }) => {
       const key = `${check.user}:${check.relation}:${check.object}`
-      results[key] = checkResponse.allowed || false
+      resultsMap[key] = allowed
     })
 
-    return results
+    return resultsMap
   } catch (error) {
     console.error("Error in batch permission check:", error)
 
@@ -366,10 +370,10 @@ export async function consolidatePermissionChecks(
   })
 
   // Process each group with appropriate batching strategy
-  for (const [type, perms] of groupedPermissions) {
+  for (const [type, perms] of Array.from(groupedPermissions.entries())) {
     if (type === "platform") {
       // Platform permissions are always the same object, can be batched
-      const checks = perms.map(perm => ({
+      const checks = perms.map((perm: { relation: string; objectId?: string }) => ({
         user: `user:${userId}`,
         relation: perm.relation,
         object: "platform:default",
@@ -377,9 +381,12 @@ export async function consolidatePermissionChecks(
 
       const batchResults = await batchCheckPermissions(checks)
       Object.assign(results, batchResults)
-    } else if (type === "partner" && perms.every(p => p.objectId)) {
+    } else if (
+      type === "partner" &&
+      perms.every((p: { relation: string; objectId?: string }) => p.objectId)
+    ) {
       // Partner permissions with specific IDs can be batched
-      const checks = perms.map(perm => ({
+      const checks = perms.map((perm: { relation: string; objectId?: string }) => ({
         user: `user:${userId}`,
         relation: perm.relation,
         object: `${type}:${perm.objectId}`,
@@ -389,11 +396,13 @@ export async function consolidatePermissionChecks(
       Object.assign(results, batchResults)
     } else {
       // For other types or mixed scenarios, use listObjects for efficiency
-      const relations = [...new Set(perms.map(p => p.relation))]
+      const relations = Array.from(
+        new Set(perms.map((p: { relation: string; objectId?: string }) => p.relation))
+      )
       const listResults = await batchListObjects(userId, relations, type)
 
       // Process results for each permission
-      perms.forEach(perm => {
+      perms.forEach((perm: { relation: string; objectId?: string }) => {
         if (perm.objectId) {
           // Specific object check
           const key = `user:${userId}:${perm.relation}:${type}:${perm.objectId}`

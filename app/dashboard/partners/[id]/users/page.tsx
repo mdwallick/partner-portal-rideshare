@@ -48,9 +48,9 @@ export default function PartnerUsersPage() {
         const data = await response.json()
 
         // Transform the unified endpoint response to match frontend expectations
-        const transformedUsers = (data.users || []).map(user => {
+        const transformedUsers = (data.users || []).map((user: any) => {
           // Find the partner-specific data for this partner
-          const partnerData = user.partners.find(p => p.id === partnerId)
+          const partnerData = user.partners.find((p: any) => p.id === partnerId)
           return {
             id: user.id,
             email: user.email,
@@ -68,7 +68,7 @@ export default function PartnerUsersPage() {
         setPartner({
           id: partnerId,
           name: "Partner", // This will be updated by parent page
-          type: "technology", // Default, will be updated by parent page
+          type: "technology" as any, // Default, will be updated by parent page
         })
 
         // Set permissions based on user's role in this partner

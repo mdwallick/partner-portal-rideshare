@@ -11,13 +11,13 @@ import {
   Cog,
   FileText,
   Edit,
-  MapPin,
   Shield,
   ArrowLeft,
   Trash2,
 } from "lucide-react"
 import Link from "next/link"
 import { Partner } from "@/lib/types"
+import Image from "next/image"
 
 export default function PartnerDetailPage() {
   const { user, isLoading } = useUser()
@@ -154,7 +154,7 @@ export default function PartnerDetailPage() {
             <div className="flex items-center space-x-4">
               <div className="flex-shrink-0">
                 {partner.logo_url ? (
-                  <img
+                  <Image
                     src={partner.logo_url}
                     alt={`${partner.name} logo`}
                     className="h-20 w-20 rounded-lg object-cover"

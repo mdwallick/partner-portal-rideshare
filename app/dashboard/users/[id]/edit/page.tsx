@@ -3,18 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
-import {
-  User,
-  Save,
-  X,
-  AlertTriangle,
-  CheckCircle,
-  ArrowLeft,
-  Calendar,
-  Shield,
-  Mail,
-  Users,
-} from "lucide-react"
+import { Save, X, AlertTriangle, CheckCircle, ArrowLeft, Shield, Mail, Users } from "lucide-react"
 import Link from "next/link"
 import { User as UserType } from "@/lib/types"
 
@@ -24,7 +13,7 @@ interface UserFormData {
 }
 
 export default function EditUserPage() {
-  const { user, isLoading } = useUser()
+  const { isLoading } = useUser()
   const router = useRouter()
   const params = useParams()
   const userId = params.id as string
@@ -34,7 +23,7 @@ export default function EditUserPage() {
     email: "",
     display_name: "",
   })
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -129,77 +118,77 @@ export default function EditUserPage() {
     }
   }
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case "partner_admin":
-        return <Shield className="h-4 w-4" />
-      case "partner_user":
-        return <User className="h-4 w-4" />
-      default:
-        return <Users className="h-4 w-4" />
-    }
-  }
+  // const getRoleIcon = (role: string) => {
+  //   switch (role) {
+  //     case "partner_admin":
+  //       return <Shield className="h-4 w-4" />
+  //     case "partner_user":
+  //       return <User className="h-4 w-4" />
+  //     default:
+  //       return <Users className="h-4 w-4" />
+  //   }
+  // }
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "partner_admin":
-        return "bg-orange-100 text-orange-800"
-      case "partner_user":
-        return "bg-blue-100 text-blue-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
+  // const getRoleColor = (role: string) => {
+  //   switch (role) {
+  //     case "partner_admin":
+  //       return "bg-orange-100 text-orange-800"
+  //     case "partner_user":
+  //       return "bg-blue-100 text-blue-800"
+  //     default:
+  //       return "bg-gray-100 text-gray-800"
+  //   }
+  // }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "active":
-        return <CheckCircle className="h-4 w-4" />
-      case "inactive":
-        return <AlertTriangle className="h-4 w-4" />
-      case "pending":
-        return <Mail className="h-4 w-4" />
-      default:
-        return <AlertTriangle className="h-4 w-4" />
-    }
-  }
+  // const getStatusIcon = (status: string) => {
+  //   switch (status) {
+  //     case "active":
+  //       return <CheckCircle className="h-4 w-4" />
+  //     case "inactive":
+  //       return <AlertTriangle className="h-4 w-4" />
+  //     case "pending":
+  //       return <Mail className="h-4 w-4" />
+  //     default:
+  //       return <AlertTriangle className="h-4 w-4" />
+  //   }
+  // }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800"
-      case "inactive":
-        return "bg-red-100 text-red-800"
-      case "pending":
-        return "bg-yellow-100 text-yellow-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case "active":
+  //       return "bg-green-100 text-green-800"
+  //     case "inactive":
+  //       return "bg-red-100 text-red-800"
+  //     case "pending":
+  //       return "bg-yellow-100 text-yellow-800"
+  //     default:
+  //       return "bg-gray-100 text-gray-800"
+  //   }
+  // }
 
-  const getRoleDescription = (role: string) => {
-    switch (role) {
-      case "partner_admin":
-        return "Full access to manage partners, users, and settings"
-      case "partner_user":
-        return "Standard access to view and manage assigned resources"
-      default:
-        return "Unknown role"
-    }
-  }
+  // const getRoleDescription = (role: string) => {
+  //   switch (role) {
+  //     case "partner_admin":
+  //       return "Full access to manage partners, users, and settings"
+  //     case "partner_user":
+  //       return "Standard access to view and manage assigned resources"
+  //     default:
+  //       return "Unknown role"
+  //   }
+  // }
 
-  const getStatusDescription = (status: string) => {
-    switch (status) {
-      case "active":
-        return "User has access to the system and can perform actions"
-      case "inactive":
-        return "User account is inactive and cannot access the system"
-      case "pending":
-        return "User has been invited but hasn't joined yet"
-      default:
-        return "Unknown status"
-    }
-  }
+  // const getStatusDescription = (status: string) => {
+  //   switch (status) {
+  //     case "active":
+  //       return "User has access to the system and can perform actions"
+  //     case "inactive":
+  //       return "User account is inactive and cannot access the system"
+  //     case "pending":
+  //       return "User has been invited but hasn't joined yet"
+  //     default:
+  //       return "Unknown status"
+  //   }
+  // }
 
   if (isLoading) {
     return (
@@ -344,7 +333,7 @@ export default function EditUserPage() {
               required
             />
             <p className="mt-1 text-sm text-gray-500">
-              The user's email address for login and communication
+              The user&apos;s email address for login and communication
             </p>
           </div>
 
@@ -404,7 +393,7 @@ export default function EditUserPage() {
               <div>
                 <h4 className="font-medium text-yellow-400">Email Updates</h4>
                 <p className="text-sm text-gray-400">
-                  Changing a user's email address will affect their login credentials and may
+                  Changing a user&apos;s email address will affect their login credentials and may
                   require re-authentication.
                 </p>
               </div>

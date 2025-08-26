@@ -97,10 +97,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }
 
-  // Redirect to login if not authenticated
+  // Redirect to landing if not authenticated
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push("/login")
+      router.push("/landing")
     }
   }, [user, isLoading, router])
 
@@ -136,6 +136,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         item.superAdminOnly ||
         item.name === "Dashboard" ||
         item.name === "Users" ||
+        item.name === "Clients" ||
         item.name === "Rideshare Map" ||
         item.name === "Settings"
       )

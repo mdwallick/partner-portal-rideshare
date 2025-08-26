@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
+import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import {
   Smartphone,
   Save,
@@ -32,6 +33,7 @@ interface ClientFormData {
 
 export default function EditClientPage() {
   const { user, isLoading } = useUser()
+  const { isSuperAdmin } = useSuperAdmin()
   const router = useRouter()
   const params = useParams()
   const clientId = params.id as string

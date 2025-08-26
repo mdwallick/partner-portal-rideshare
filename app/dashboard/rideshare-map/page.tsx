@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
-import { useRouter } from "next/navigation"
-import { MapPin, Car, Navigation, RefreshCw } from "lucide-react"
+// import { useRouter } from "next/navigation"
+import { MapPin, Car, RefreshCw } from "lucide-react"
 import dynamic from "next/dynamic"
 
 // Dynamically import the map component to avoid SSR issues
@@ -45,7 +45,7 @@ const DEFAULT_COORDINATES: Record<string, { center: [number, number]; zoom: numb
 
 export default function RideshareMapPage() {
   const { user, isLoading } = useUser()
-  const router = useRouter()
+  // const router = useRouter()
   const [metroAreas, setMetroAreas] = useState<MetroArea[]>([])
   const [selectedMetro, setSelectedMetro] = useState<MetroArea | null>(null)
   const [isTechnologyPartner, setIsTechnologyPartner] = useState(false)

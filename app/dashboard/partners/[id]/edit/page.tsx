@@ -15,6 +15,7 @@ import {
   Cog,
 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 interface Partner {
   id: string
@@ -51,7 +52,7 @@ interface MetroArea {
 }
 
 export default function EditPartnerPage() {
-  const { user, isLoading } = useUser()
+  const { isLoading } = useUser()
   const router = useRouter()
   const params = useParams()
   const partnerId = params.id as string
@@ -67,7 +68,7 @@ export default function EditPartnerPage() {
       software_firmware: false,
     },
   })
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -325,7 +326,7 @@ export default function EditPartnerPage() {
           <div className="bg-red-900/20 border border-red-700 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-red-400 mb-2">Access Restricted</h2>
             <p className="text-red-300 mb-4">
-              You don't have permission to edit this partner record. You can only edit your own
+              You don&apos;t have permission to edit this partner record. You can only edit your own
               partner information.
             </p>
             <div className="space-x-4">
@@ -462,7 +463,9 @@ export default function EditPartnerPage() {
         </div>
         <div className="flex items-center space-x-4">
           {partner.logo_url ? (
-            <img
+            <Image
+              width={64}
+              height={64}
               src={partner.logo_url}
               alt={partner.name}
               className="w-16 h-16 rounded-lg object-cover bg-gray-600"
@@ -542,52 +545,68 @@ export default function EditPartnerPage() {
           <div>
             <label htmlFor="type" className="block text-sm font-medium text-gray-300 mb-2">
               Partner Type *
-            </label>
-            <select
-              id="type"
-              name="type"
-              value={formData.type}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              required
-            >
-              <option value="technology">Platform Partner</option>
-              <option value="manufacturing">Manufacturing Partner</option>
-              <option value="fleet_maintenance">Fleet Maintenance Partner</option>
-            </select>
-            <div className="mt-2 flex items-start space-x-3 p-3 bg-gray-800/50 rounded-lg">
-              {formData.type === "technology" ? (
-                <>
-                  <Globe className="h-5 w-5 text-blue-400 mt-0.5" />
-                  <div className="text-sm">
-                    <p className="text-blue-400 font-medium">Platform Partner</p>
-                    <p className="text-gray-400">
-                      Manages client applications (mobile apps, web apps, M2M integrations)
-                    </p>
-                  </div>
-                </>
-              ) : formData.type === "manufacturing" ? (
-                <>
-                  <Shield className="h-5 w-5 text-green-400 mt-0.5" />
-                  <div className="text-sm">
-                    <p className="text-green-400 font-medium">Manufacturing Partner</p>
-                    <p className="text-gray-400">
-                      Manages manufacturing documents and specifications
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <Cog className="h-5 w-5 text-purple-400 mt-0.5" />
-                  <div className="text-sm">
-                    <p className="text-purple-400 font-medium">Fleet Maintenance Partner</p>
-                    <p className="text-gray-400">
-                      Manages autonomous vehicle maintenance, software updates, and fleet operations
-                    </p>
-                  </div>
-                </>
+              {!isSuperAdmin && (
+                <span className="ml-2 text-xs text-gray-500">(Read-only for non-super admins)</span>
               )}
-            </div>
+            </label>
+            {isSuperAdmin ? (
+              <select
+                id="type"
+                name="type"
+                value={formData.type}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                required
+              >
+                <option value="technology">Platform Partner</option>
+                <option value="manufacturing">Manufacturing Partner</option>
+                <option value="fleet_maintenance">Fleet Maintenance Partner</option>
+              </select>
+            ) : (
+              <div className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-gray-300">
+                {formData.type === "technology"
+                  ? "Platform Partner"
+                  : formData.type === "manufacturing"
+                    ? "Manufacturing Partner"
+                    : "Fleet Maintenance Partner"}
+              </div>
+            )}
+            {isSuperAdmin && (
+              <div className="mt-2 flex items-start space-x-3 p-3 bg-gray-800/50 rounded-lg">
+                {formData.type === "technology" ? (
+                  <>
+                    <Globe className="h-5 w-5 text-blue-400 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="text-blue-400 font-medium">Platform Partner</p>
+                      <p className="text-gray-400">
+                        Manages client applications (mobile apps, web apps, M2M integrations)
+                      </p>
+                    </div>
+                  </>
+                ) : formData.type === "manufacturing" ? (
+                  <>
+                    <Shield className="h-5 w-5 text-green-400 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="text-green-400 font-medium">Manufacturing Partner</p>
+                      <p className="text-gray-400">
+                        Manages manufacturing documents and specifications
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Cog className="h-5 w-5 text-purple-400 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="text-purple-400 font-medium">Fleet Maintenance Partner</p>
+                      <p className="text-gray-400">
+                        Manages autonomous vehicle maintenance, software updates, and fleet
+                        operations
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Logo URL */}
@@ -600,7 +619,9 @@ export default function EditPartnerPage() {
               {logoPreview && (
                 <div className="flex items-center space-x-4">
                   <div className="relative">
-                    <img
+                    <Image
+                      width={64}
+                      height={64}
                       src={logoPreview}
                       alt="Logo preview"
                       className="w-20 h-20 rounded-lg object-cover bg-gray-700"
@@ -721,7 +742,7 @@ export default function EditPartnerPage() {
                 <div className="space-y-4">
                   <p className="text-sm text-gray-400">
                     Select which metro areas this partner can access for rideshare operations.
-                    Changes will be saved when you click "Save Changes" below.
+                    Changes will be saved when you click &apos;Save Changes&apos; below.
                   </p>
 
                   {loadingMetroAreas ? (

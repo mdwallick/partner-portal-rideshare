@@ -13,7 +13,6 @@ import {
   CheckCircle,
   Copy,
   File,
-  DocumentText,
   Archive,
 } from "lucide-react"
 import Link from "next/link"
@@ -356,7 +355,7 @@ export default function DocumentDetailsPage() {
                 <span>Automatically assigned to your organization</span>
               </div>
               <div className="flex items-center space-x-2 text-sm text-gray-300">
-                <DocumentText className="h-4 w-4 text-green-400" />
+                <FileText className="h-4 w-4 text-green-400" />
                 <span>Version control and change tracking</span>
               </div>
               <div className="flex items-center space-x-2 text-sm text-gray-300">

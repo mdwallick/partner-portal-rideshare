@@ -15,14 +15,7 @@
     "prisma:push": "dotenv -e .env.local -- prisma db push",
     "prisma:generate": "dotenv -e .env.local -- prisma generate",
     "prisma:studio": "dotenv -e .env.local -- prisma studio",
-    "prisma:truncate": "dotenv -e .env.local -- tsx prisma/scripts/clear-db.ts",
-    "phase1:deploy-fga": "dotenv -e .env.local -- tsx scripts/deploy-fga-model.ts",
-    "phase1:init-fga": "dotenv -e .env.local -- tsx scripts/init-fga-tuples.ts",
-    "phase2:test-api": "dotenv -e .env.local -- tsx scripts/test-api-endpoints.ts",
-    "setup-super-admin": "dotenv -e .env.local -- tsx scripts/setup-super-admin.ts",
-    "find-user-id": "dotenv -e .env.local -- tsx scripts/find-user-id.ts",
-    "test-fga": "dotenv -e .env.local -- tsx scripts/test-fga-setup.ts",
-    "test-batch-fga": "dotenv -e .env.local -- tsx scripts/test-batch-fga-operations.js"
+    "prisma:truncate": "dotenv -e .env.local -- tsx prisma/scripts/clear-db.ts"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.9.0",

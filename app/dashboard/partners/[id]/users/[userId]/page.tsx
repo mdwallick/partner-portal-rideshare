@@ -57,7 +57,7 @@ export default function UserDetailsPage() {
         const data = await response.json()
 
         // Transform the unified endpoint response to match frontend expectations
-        const partnerData = data.partners.find(p => p.id === partnerId)
+        const partnerData = data.partners.find((p: any) => p.id === partnerId)
         if (partnerData) {
           const transformedUser = {
             id: data.id,

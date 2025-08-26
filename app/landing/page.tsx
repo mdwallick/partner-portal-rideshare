@@ -12,7 +12,6 @@ import {
   ArrowRight,
   CheckCircle,
   Globe,
-  Lock,
   TrendingUp,
 } from "lucide-react"
 
@@ -195,7 +194,7 @@ export default function LandingPage() {
               Designed for Every Partner Type
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Whether you're building technology solutions, manufacturing hardware, or managing
+              Whether you&apos;re building technology solutions, manufacturing hardware, or managing
               fleet operations, we have you covered.
             </p>
           </div>
@@ -249,7 +248,7 @@ export default function LandingPage() {
             technology.
           </p>
           <Link
-            href="/login"
+            href="/auth/login"
             className="inline-flex items-center px-8 py-4 border border-transparent text-lg font-medium rounded-lg text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all transform hover:scale-105"
           >
             Sign In to Partner Portal

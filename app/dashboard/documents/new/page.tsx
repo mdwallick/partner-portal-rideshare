@@ -3,19 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
-import {
-  FileText,
-  Save,
-  X,
-  Upload,
-  AlertTriangle,
-  CheckCircle,
-  File,
-  DocumentText,
-  Image,
-  Video,
-  Archive,
-} from "lucide-react"
+import { FileText, Save, X, AlertTriangle, CheckCircle, File, Archive } from "lucide-react"
 import Link from "next/link"
 
 interface DocumentFormData {
@@ -199,7 +187,7 @@ export default function NewDocumentPage() {
               required
             />
             <p className="mt-1 text-sm text-gray-500">
-              Describe the document's purpose, scope, and key contents
+              Describe the document&apos;s purpose, scope, and key contents
             </p>
           </div>
 
@@ -218,7 +206,7 @@ export default function NewDocumentPage() {
                 </div>
               </div>
               <div className="flex items-start space-x-3">
-                <DocumentText className="h-5 w-5 text-green-400 mt-0.5" />
+                <FileText className="h-5 w-5 text-green-400 mt-0.5" />
                 <div>
                   <h4 className="font-medium text-green-400">Version Control</h4>
                   <p className="text-sm text-gray-400">
@@ -279,22 +267,23 @@ export default function NewDocumentPage() {
               <div>
                 <h4 className="font-medium text-orange-400">Clear Naming</h4>
                 <p className="text-sm text-gray-400">
-                  Use descriptive names that clearly indicate the document's purpose and content.
+                  Use descriptive names that clearly indicate the document&apos;s purpose and
+                  content.
                 </p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
-              <DocumentText className="h-5 w-5 text-green-400 mt-0.5" />
+              <FileText className="h-5 w-5 text-green-400 mt-0.5" />
               <div>
                 <h4 className="font-medium text-green-400">Detailed Descriptions</h4>
                 <p className="text-sm text-gray-400">
                   Provide comprehensive descriptions that help team members understand the
-                  document's scope and importance.
+                  document&apos;s scope and importance.
                 </p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
-              <Image className="h-5 w-5 text-blue-400 mt-0.5" />
+              <FileText className="h-5 w-5 text-blue-400 mt-0.5" />
               <div>
                 <h4 className="font-medium text-blue-400">Content Organization</h4>
                 <p className="text-sm text-gray-400">
