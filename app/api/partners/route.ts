@@ -67,8 +67,13 @@ export async function POST(request: NextRequest) {
     const typeString = body.type as string
     const logo_url = body.logo_url as string | null
     const metroAreaIds = body.metroAreaIds as string | null
+    const manufacturingCapabilities = body.manufacturingCapabilities as {
+      hardware_sensors?: boolean
+      hardware_parts?: boolean
+      software_firmware?: boolean
+    } | null
 
-    // console.log("🔍 Request body:", { name, typeString, logo_url, metroAreaIds })
+    // console.log("🔍 Request body:", { name, typeString, logo_url, metroAreaIds, manufacturingCapabilities })
 
     if (!name || !typeString) {
       return NextResponse.json({ error: "Name and type are required" }, { status: 400 })
@@ -82,6 +87,23 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       )
+    }
+
+    // Validate manufacturing capabilities for manufacturing partners
+    if (typeString === "manufacturing" && manufacturingCapabilities) {
+      if (
+        typeof manufacturingCapabilities.hardware_sensors !== "boolean" ||
+        typeof manufacturingCapabilities.hardware_parts !== "boolean" ||
+        typeof manufacturingCapabilities.software_firmware !== "boolean"
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Manufacturing capabilities must include boolean values for hardware_sensors, hardware_parts, and software_firmware",
+          },
+          { status: 400 }
+        )
+      }
     }
 
     // Convert string to PartnerType enum
@@ -121,6 +143,27 @@ export async function POST(request: NextRequest) {
     })
 
     // console.log(`🗄️ Created partner in database: ${name} (${partnerId})`)
+
+    // Create manufacturing capabilities if this is a manufacturing partner
+    if (type === "manufacturing" && manufacturingCapabilities) {
+      try {
+        await prisma.partnerManufacturingCapabilities.create({
+          data: {
+            partner_id: partnerId,
+            hardware_sensors: manufacturingCapabilities.hardware_sensors || false,
+            hardware_parts: manufacturingCapabilities.hardware_parts || false,
+            software_firmware: manufacturingCapabilities.software_firmware || false,
+          },
+        })
+        console.log(
+          `🏭 Created manufacturing capabilities for partner ${partnerId}:`,
+          manufacturingCapabilities
+        )
+      } catch (capabilityError) {
+        console.error("❌ Error creating manufacturing capabilities:", capabilityError)
+        // Continue with partner creation even if manufacturing capabilities creation fails
+      }
+    }
 
     // Handle metro area assignment if provided
     if (metroAreaIds && (type === "technology" || type === "fleet_maintenance")) {

@@ -22,12 +22,26 @@ interface Partner {
   type: "technology" | "manufacturing" | "fleet_maintenance"
   logo_url?: string
   created_at: string
+  manufacturingCapabilities?: {
+    id: string
+    partner_id: string
+    hardware_sensors: boolean
+    hardware_parts: boolean
+    software_firmware: boolean
+    created_at: string
+    updated_at: string
+  }
 }
 
 interface PartnerFormData {
   name: string
   type: "technology" | "manufacturing" | "fleet_maintenance"
   logo_url?: string
+  manufacturingCapabilities: {
+    hardware_sensors: boolean
+    hardware_parts: boolean
+    software_firmware: boolean
+  }
 }
 
 interface MetroArea {
@@ -47,6 +61,11 @@ export default function EditPartnerPage() {
     name: "",
     type: "technology",
     logo_url: "",
+    manufacturingCapabilities: {
+      hardware_sensors: false,
+      hardware_parts: false,
+      software_firmware: false,
+    },
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -117,6 +136,11 @@ export default function EditPartnerPage() {
           name: partnerData.name,
           type: partnerData.type,
           logo_url: partnerData.logo_url || "",
+          manufacturingCapabilities: partnerData.manufacturingCapabilities || {
+            hardware_sensors: false,
+            hardware_parts: false,
+            software_firmware: false,
+          },
         })
         if (partnerData.logo_url) {
           setLogoPreview(partnerData.logo_url)
@@ -181,6 +205,18 @@ export default function EditPartnerPage() {
     setFormData(prev => ({ ...prev, logo_url: "" }))
   }
 
+  const handleManufacturingCapabilityChange = (
+    capability: "hardware_sensors" | "hardware_parts" | "software_firmware"
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      manufacturingCapabilities: {
+        ...prev.manufacturingCapabilities,
+        [capability]: !prev.manufacturingCapabilities[capability],
+      },
+    }))
+  }
+
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
       setError("Partner name is required")
@@ -222,6 +258,15 @@ export default function EditPartnerPage() {
         name: formData.name.trim(),
         type: formData.type,
         logo_url: formData.logo_url || null,
+      }
+
+      // Add manufacturing capabilities if super admin and partner type supports it
+      if (isSuperAdmin && formData.type === "manufacturing") {
+        requestBody.manufacturingCapabilities = formData.manufacturingCapabilities
+        console.log(
+          "🛠️ Including manufacturing capabilities in submission:",
+          requestBody.manufacturingCapabilities
+        )
       }
 
       // Add metro areas if super admin and partner type supports it
@@ -335,6 +380,14 @@ export default function EditPartnerPage() {
             <p className="text-sm text-gray-300">
               <span className="font-medium">Type:</span> {formData.type}
             </p>
+            {isSuperAdmin && formData.type === "manufacturing" && (
+              <p className="text-sm text-gray-300">
+                <span className="font-medium">Manufacturing Capabilities:</span>
+                {formData.manufacturingCapabilities.hardware_sensors && " Hardware Sensors, "}
+                {formData.manufacturingCapabilities.hardware_parts && " Hardware Parts, "}
+                {formData.manufacturingCapabilities.software_firmware && " Software Firmware"}
+              </p>
+            )}
             {isSuperAdmin &&
               (formData.type === "technology" || formData.type === "fleet_maintenance") && (
                 <p className="text-sm text-gray-300">
@@ -604,6 +657,59 @@ export default function EditPartnerPage() {
             </p>
           </div>
 
+          {/* Manufacturing Capabilities (Super Admin Only) */}
+          {isSuperAdmin && formData.type === "manufacturing" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Manufacturing Capabilities
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.manufacturingCapabilities.hardware_sensors}
+                    onChange={() => handleManufacturingCapabilityChange("hardware_sensors")}
+                    className="rounded border-gray-600 text-orange-600 focus:ring-orange-500 focus:ring-offset-gray-800"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-white">Hardware Sensors</span>
+                    <p className="text-xs text-gray-400">
+                      Ability to monitor and collect data from physical sensors on vehicles.
+                    </p>
+                  </div>
+                </label>
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.manufacturingCapabilities.hardware_parts}
+                    onChange={() => handleManufacturingCapabilityChange("hardware_parts")}
+                    className="rounded border-gray-600 text-orange-600 focus:ring-orange-500 focus:ring-offset-gray-800"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-white">Hardware Parts</span>
+                    <p className="text-xs text-gray-400">
+                      Access to inventory and management of physical vehicle components.
+                    </p>
+                  </div>
+                </label>
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.manufacturingCapabilities.software_firmware}
+                    onChange={() => handleManufacturingCapabilityChange("software_firmware")}
+                    className="rounded border-gray-600 text-orange-600 focus:ring-orange-500 focus:ring-offset-gray-800"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-white">Software Firmware</span>
+                    <p className="text-xs text-gray-400">
+                      Access to manage and update software firmware on autonomous vehicles.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+          )}
+
           {/* Metro Area Management (Super Admin Only) */}
 
           {isSuperAdmin &&
@@ -681,9 +787,8 @@ export default function EditPartnerPage() {
               {saving ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  {isSuperAdmin &&
-                  (formData.type === "technology" || formData.type === "fleet_maintenance")
-                    ? "Saving Partner & Metro Areas..."
+                  {isSuperAdmin && formData.type === "manufacturing"
+                    ? "Saving Partner & Manufacturing Capabilities..."
                     : "Saving..."}
                 </>
               ) : (

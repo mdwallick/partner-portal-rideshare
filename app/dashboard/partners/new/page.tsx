@@ -10,6 +10,11 @@ interface PartnerFormData {
   name: string
   type: "technology" | "manufacturing" | "fleet_maintenance"
   logo_url?: string
+  manufacturingCapabilities: {
+    hardware_sensors: boolean
+    hardware_parts: boolean
+    software_firmware: boolean
+  }
 }
 
 interface MetroArea {
@@ -25,6 +30,11 @@ export default function NewPartnerPage() {
     name: "",
     type: "technology",
     logo_url: "",
+    manufacturingCapabilities: {
+      hardware_sensors: false,
+      hardware_parts: false,
+      software_firmware: false,
+    },
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -98,6 +108,18 @@ export default function NewPartnerPage() {
     setFormData(prev => ({ ...prev, logo_url: "" }))
   }
 
+  const handleManufacturingCapabilityChange = (
+    capability: keyof PartnerFormData["manufacturingCapabilities"]
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      manufacturingCapabilities: {
+        ...prev.manufacturingCapabilities,
+        [capability]: !prev.manufacturingCapabilities[capability],
+      },
+    }))
+  }
+
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
       setError("Partner name is required")
@@ -139,6 +161,7 @@ export default function NewPartnerPage() {
         name: formData.name.trim(),
         type: formData.type,
         logo_url: formData.logo_url || null,
+        manufacturingCapabilities: formData.manufacturingCapabilities,
       }
 
       // Add metro areas if super admin and partner type supports it
@@ -310,6 +333,63 @@ export default function NewPartnerPage() {
               )}
             </div>
           </div>
+
+          {/* Manufacturing Capabilities */}
+          {formData.type === "manufacturing" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Manufacturing Capabilities
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                <label className="flex items-start space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.manufacturingCapabilities.hardware_sensors}
+                    onChange={() => handleManufacturingCapabilityChange("hardware_sensors")}
+                    className="rounded border-gray-600 text-orange-600 focus:ring-orange-500 focus:ring-offset-gray-800 mt-1"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-white">Hardware Sensors</span>
+                    <p className="text-xs text-gray-400">
+                      Sensors for monitoring vehicle health, location, and environmental conditions.
+                    </p>
+                  </div>
+                </label>
+                <label className="flex items-start space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.manufacturingCapabilities.hardware_parts}
+                    onChange={() => handleManufacturingCapabilityChange("hardware_parts")}
+                    className="rounded border-gray-600 text-orange-600 focus:ring-orange-500 focus:ring-offset-gray-800 mt-1"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-white">Hardware Parts</span>
+                    <p className="text-xs text-gray-400">
+                      Access to manufacturing parts and components for repairs and replacements.
+                    </p>
+                  </div>
+                </label>
+                <label className="flex items-start space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.manufacturingCapabilities.software_firmware}
+                    onChange={() => handleManufacturingCapabilityChange("software_firmware")}
+                    className="rounded border-gray-600 text-orange-600 focus:ring-orange-500 focus:ring-offset-gray-800 mt-1"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-white">Software/Firmware</span>
+                    <p className="text-xs text-gray-400">
+                      Access to software updates and firmware for autonomous vehicles.
+                    </p>
+                  </div>
+                </label>
+              </div>
+              <p className="mt-2 text-sm text-gray-400">
+                Select the manufacturing capabilities this partner will provide. These can be
+                updated later.
+              </p>
+            </div>
+          )}
 
           {/* Logo URL */}
           <div>

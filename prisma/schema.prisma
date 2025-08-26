@@ -23,12 +23,24 @@ model Partner {
   documents       Document[]
   partnerUsers    PartnerUser[]
   metroAreas      PartnerMetroArea[]
+  manufacturingCapabilities PartnerManufacturingCapabilities?
 }
 
 enum PartnerType {
   technology
   manufacturing
   fleet_maintenance
+}
+
+model PartnerManufacturingCapabilities {
+  id                    String   @id @default(uuid())
+  partner               Partner  @relation(fields: [partner_id], references: [id])
+  partner_id            String   @unique // One-to-one relationship
+  hardware_sensors      Boolean  @default(false)
+  hardware_parts        Boolean  @default(false)
+  software_firmware     Boolean  @default(false)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
 }
 
 model User {

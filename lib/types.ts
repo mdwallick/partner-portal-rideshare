@@ -32,6 +32,18 @@ export interface Partner {
   status: string
   created_at: string
   updated_at: string
+  manufacturingCapabilities?: PartnerManufacturingCapabilities
+}
+
+// Partner Manufacturing Capabilities interface
+export interface PartnerManufacturingCapabilities {
+  id: string
+  partner_id: string
+  hardware_sensors: boolean
+  hardware_parts: boolean
+  software_firmware: boolean
+  created_at: string
+  updated_at: string
 }
 
 // Partner User interface (for the relationship table)

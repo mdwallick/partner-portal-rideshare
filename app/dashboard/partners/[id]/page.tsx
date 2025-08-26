@@ -408,6 +408,158 @@ export default function PartnerDetailPage() {
           </div>
         )}
 
+        {/* Manufacturing Capabilities Section */}
+        {partner.type === "manufacturing" && (
+          <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white flex items-center">
+                <span className="mr-2">🏭</span>
+                Manufacturing Capabilities
+              </h2>
+              {partner.userCanAdmin && (
+                <Link
+                  href={`/dashboard/partners/${partnerId}/edit`}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <Edit className="h-4 w-4 mr-1.5" />
+                  Edit
+                </Link>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div
+                className={`border rounded-lg p-4 transition-colors ${
+                  partner.manufacturingCapabilities?.hardware_sensors
+                    ? "border-green-500 bg-green-900/20"
+                    : "border-gray-600 bg-gray-700"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div
+                    className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+                      partner.manufacturingCapabilities?.hardware_sensors
+                        ? "bg-green-900"
+                        : "bg-gray-600"
+                    }`}
+                  >
+                    <span
+                      className={`text-sm font-medium ${
+                        partner.manufacturingCapabilities?.hardware_sensors
+                          ? "text-green-400"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      🔍
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-white">Hardware Sensors</h3>
+                    <p className="text-xs text-gray-400">
+                      {partner.manufacturingCapabilities?.hardware_sensors
+                        ? "Capability enabled"
+                        : "Capability disabled"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className={`border rounded-lg p-4 transition-colors ${
+                  partner.manufacturingCapabilities?.hardware_parts
+                    ? "border-green-500 bg-green-900/20"
+                    : "border-gray-600 bg-gray-700"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div
+                    className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+                      partner.manufacturingCapabilities?.hardware_parts
+                        ? "bg-green-900"
+                        : "bg-gray-600"
+                    }`}
+                  >
+                    <span
+                      className={`text-sm font-medium ${
+                        partner.manufacturingCapabilities?.hardware_parts
+                          ? "text-green-400"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      ⚙️
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-white">Hardware Parts</h3>
+                    <p className="text-xs text-gray-400">
+                      {partner.manufacturingCapabilities?.hardware_parts
+                        ? "Capability enabled"
+                        : "Capability disabled"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className={`border rounded-lg p-4 transition-colors ${
+                  partner.manufacturingCapabilities?.software_firmware
+                    ? "border-green-500 bg-green-900/20"
+                    : "border-gray-600 bg-gray-700"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div
+                    className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+                      partner.manufacturingCapabilities?.software_firmware
+                        ? "bg-green-900"
+                        : "bg-gray-600"
+                    }`}
+                  >
+                    <span
+                      className={`text-sm font-medium ${
+                        partner.manufacturingCapabilities?.software_firmware
+                          ? "text-green-400"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      💾
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-white">Software/Firmware</h3>
+                    <p className="text-xs text-gray-400">
+                      {partner.manufacturingCapabilities?.software_firmware
+                        ? "Capability enabled"
+                        : "text-gray-400"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {(!partner.manufacturingCapabilities ||
+              (!partner.manufacturingCapabilities.hardware_sensors &&
+                !partner.manufacturingCapabilities.hardware_parts &&
+                !partner.manufacturingCapabilities.software_firmware)) && (
+              <div className="text-center py-6 mt-4">
+                <div className="text-gray-400 mb-2">
+                  <span className="text-4xl">🏭</span>
+                </div>
+                <p className="text-gray-400 mb-4">No manufacturing capabilities configured</p>
+                {partner.userCanAdmin && (
+                  <Link
+                    href={`/dashboard/partners/${partnerId}/edit`}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Configure Capabilities
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Content based on partner type */}
         {partner.type === "technology" ? (
           <div className="space-y-8">

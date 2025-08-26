@@ -23,6 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             metro_area: true,
           },
         },
+        manufacturingCapabilities: true,
       },
     })
 
@@ -65,6 +66,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const typeString = body.type as string
     const logo_url = body.logo_url as string | null
     const metroAreaIds = body.metroAreaIds as string | null
+    const manufacturingCapabilities = body.manufacturingCapabilities as {
+      hardware_sensors?: boolean
+      hardware_parts?: boolean
+      software_firmware?: boolean
+    } | null
 
     // Validate partner type
     if (typeString && !["technology", "manufacturing", "fleet_maintenance"].includes(typeString)) {
@@ -75,6 +81,23 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         },
         { status: 400 }
       )
+    }
+
+    // Validate manufacturing capabilities for manufacturing partners
+    if (typeString === "manufacturing" && manufacturingCapabilities) {
+      if (
+        typeof manufacturingCapabilities.hardware_sensors !== "boolean" ||
+        typeof manufacturingCapabilities.hardware_parts !== "boolean" ||
+        typeof manufacturingCapabilities.software_firmware !== "boolean"
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Manufacturing capabilities must include boolean values for hardware_sensors, hardware_parts, and software_firmware",
+          },
+          { status: 400 }
+        )
+      }
     }
 
     // Convert string to PartnerType enum (only if type is provided)
@@ -106,6 +129,40 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         logo_url: logo_url !== undefined ? logo_url : partner.logo_url,
       },
     })
+
+    // Handle manufacturing capabilities updates if provided
+    if (
+      manufacturingCapabilities &&
+      (type === "manufacturing" || partner.type === "manufacturing")
+    ) {
+      try {
+        console.log("🏭 Processing manufacturing capabilities update:", manufacturingCapabilities)
+
+        // Upsert manufacturing capabilities (create if doesn't exist, update if it does)
+        await prisma.partnerManufacturingCapabilities.upsert({
+          where: { partner_id: partnerId },
+          update: {
+            hardware_sensors: manufacturingCapabilities.hardware_sensors || false,
+            hardware_parts: manufacturingCapabilities.hardware_parts || false,
+            software_firmware: manufacturingCapabilities.software_firmware || false,
+          },
+          create: {
+            partner_id: partnerId,
+            hardware_sensors: manufacturingCapabilities.hardware_sensors || false,
+            hardware_parts: manufacturingCapabilities.hardware_parts || false,
+            software_firmware: manufacturingCapabilities.software_firmware || false,
+          },
+        })
+
+        console.log(
+          `✅ Updated manufacturing capabilities for partner ${partnerId}:`,
+          manufacturingCapabilities
+        )
+      } catch (capabilityError) {
+        console.error("❌ Error updating manufacturing capabilities:", capabilityError)
+        // Don't fail the entire update if manufacturing capabilities update fails
+      }
+    }
 
     // Handle metro area assignment if provided and user is super admin
     if (metroAreaIds && isSuperAdmin) {
