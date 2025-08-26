@@ -272,16 +272,14 @@ export class Auth0ManagementAPI {
     allowed_logout_urls?: string[]
     web_origins?: string[]
     metadata?: JsonRecord
-  }): Promise<Auth0ClientSummary> {
+  }): Promise<Auth0ClientSummary & { client_secret?: string }> {
     const { data: c } = await this.mgmt.clients.create({
       name: params.name,
       app_type: params.app_type,
       grant_types: params.grant_types || ["authorization_code", "refresh_token"],
-      response_types: params.response_types || ["code"],
       callbacks: params.callbacks || [],
       allowed_logout_urls: params.allowed_logout_urls || [],
       web_origins: params.web_origins || [],
-      metadata: params.metadata,
       token_endpoint_auth_method: "none", // For public clients
     })
     return {
@@ -297,6 +295,7 @@ export class Auth0ManagementAPI {
       metadata: c.metadata,
       created_at: c.created_at,
       updated_at: c.updated_at,
+      client_secret: c.client_secret, // Include client secret if available
     }
   }
 
@@ -341,11 +340,9 @@ export class Auth0ManagementAPI {
         name: updates.name,
         app_type: updates.app_type,
         grant_types: updates.grant_types,
-        response_types: updates.response_types,
         callbacks: updates.callbacks,
         allowed_logout_urls: updates.allowed_logout_urls,
         web_origins: updates.web_origins,
-        metadata: updates.metadata,
       }
     )
     return {
@@ -460,14 +457,14 @@ export class Auth0ManagementAPI {
   /**
    * Send password reset email to user
    */
-  async sendPasswordResetEmail(email: string): Promise<void> {
-    const connection = process.env.AUTH0_DB_CONNECTION || "Username-Password-Authentication"
-    await this.mgmt.tickets.createPasswordChange({
-      user_id: email, // Auth0 accepts email for password reset
-      connection_id: connection,
-      result_url: `${process.env.NEXT_PUBLIC_APP_URL}/login?message=password-reset-sent`,
-    })
-  }
+  // async sendPasswordResetEmail(email: string): Promise<void> {
+  //   const connection = process.env.AUTH0_DB_CONNECTION || "Username-Password-Authentication"
+  //   await this.mgmt.tickets.createPasswordChange({
+  //     user_id: email, // Auth0 accepts email for password reset
+  //     connection_id: connection,
+  //     result_url: `${process.env.NEXT_PUBLIC_APP_URL}/login?message=password-reset-sent`,
+  //   })
+  // }
 
   /**
    * Complete user setup process: create user, add to organization, and send credentials
@@ -508,7 +505,7 @@ export class Auth0ManagementAPI {
       await this.addUserToOrganization(params.organizationId, user.id)
 
       // 3. Send password reset email (more secure than temporary password)
-      await this.sendPasswordResetEmail(params.email)
+      // await this.sendPasswordResetEmail(params.email)
 
       return {
         auth0UserId: user.id,

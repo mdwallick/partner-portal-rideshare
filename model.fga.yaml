@@ -1,0 +1,51 @@
+model: |
+  model
+  schema 1.1
+
+  type user
+
+  type partner
+    relations
+      define can_admin: [user] or super_admin from parent
+      define can_manage_members: [user] or can_admin or super_admin from parent
+      define can_view: [user] or can_manage_members or super_admin from parent
+      define parent: [platform]
+
+  type client
+    relations
+      define can_admin: [user] or can_admin from parent
+      define can_view: [user] or can_view from parent
+      define parent: [partner]
+
+  type metro_area
+    relations
+      define can_admin: [user] or can_admin from parent or super_admin from platform
+      define can_view: [user] or can_view from parent or super_admin from platform
+      define parent: [partner]
+      define platform: [platform]
+
+  type document
+    relations
+      define can_admin: [user] or can_admin from parent
+      define can_view: [user] or can_view from parent
+      define parent: [partner]
+
+  type platform
+    relations
+      define can_manage_all: [user] or super_admin
+      define can_view_all: [user] or super_admin
+      define manage_sme_admins: [user] or super_admin
+      define super_admin: [user]
+
+tuples:
+  # Connect metro areas to platform
+  - user: platform:default
+    relation: platform
+    object: metro_area:2
+
+  - user: platform:default
+    relation: platform
+    object: metro_area:1
+
+tests:
+  - check: []

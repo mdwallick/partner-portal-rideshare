@@ -14,10 +14,7 @@ import {
   Mail,
   Shield,
   Users,
-  MoreVertical,
   Copy,
-  ExternalLink,
-  Clock,
   Activity,
 } from "lucide-react"
 import Link from "next/link"

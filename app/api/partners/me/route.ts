@@ -26,8 +26,6 @@ export async function GET() {
       })
     }
 
-    console.log("🔍 Looking up user with Auth0 ID:", user.sub)
-
     // Find user and their active partner assignments
     const userRecord = await prisma.user.findUnique({
       where: { auth0_user_id: user.sub },
@@ -39,15 +37,6 @@ export async function GET() {
       },
     })
 
-    console.log("📋 User record found:", userRecord ? "Yes" : "No")
-    if (userRecord) {
-      console.log("👥 Partner users count:", userRecord.partnerUsers.length)
-      console.log(
-        "👥 Active partner users:",
-        userRecord.partnerUsers.filter(pu => pu.status === "active").length
-      )
-    }
-
     if (!userRecord) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
@@ -55,23 +44,27 @@ export async function GET() {
     const activePartnerUsers = userRecord.partnerUsers.filter(pu => pu.status === "active")
 
     if (activePartnerUsers.length === 0) {
-      console.log("⚠️ No active partner users found")
       return NextResponse.json(null)
     }
 
     // For now, return the first active partner (can expand to multiple later)
     const partnerUser = activePartnerUsers[0]
-    console.log("✅ Returning partner user:", {
-      role: partnerUser.role,
-      partnerId: partnerUser.partner.id,
-      partnerName: partnerUser.partner.name,
-    })
+    // console.log("✅ Returning partner user:", {
+    //   role: partnerUser.role,
+    //   partnerId: partnerUser.partner.id,
+    //   partnerName: partnerUser.partner.name,
+    //   partnerType: partnerUser.partner.type,
+    // })
 
-    return NextResponse.json({
+    const responseData = {
       role: partnerUser.role,
       partner: partnerUser.partner,
       isSuperAdmin: false,
-    })
+    }
+
+    // console.log("📤 Sending response:", JSON.stringify(responseData, null, 2))
+
+    return NextResponse.json(responseData)
   } catch (error) {
     console.error("Error fetching partner info:", error)
     if (error instanceof Error && error.message === "Authentication required") {

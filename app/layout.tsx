@@ -11,12 +11,12 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   // Log when layout renders
-  console.log("--------------------------------")
-  console.log("🔄 Root Layout Rendered")
+  // console.log("--------------------------------")
+  // console.log("🔄 Root Layout Rendered")
 
   return (
-    <html lang="en" className="h-full bg-gray-900">
-      <body className="min-h-screen bg-gray-900">
+    <html lang="en" className="h-full bg-waymo-primary">
+      <body className="min-h-screen bg-waymo-primary">
         <Auth0Provider>
           {children}
           <Toaster position="top-right" />

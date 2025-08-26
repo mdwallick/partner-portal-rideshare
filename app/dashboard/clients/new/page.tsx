@@ -7,7 +7,6 @@ import {
   Smartphone,
   Save,
   X,
-  Upload,
   Globe,
   Monitor,
   Server,
@@ -33,8 +32,9 @@ export default function NewClientPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [pictureFile, setPictureFile] = useState<File | null>(null)
-  const [picturePreview, setPicturePreview] = useState<string | null>(null)
+  const [createdClient, setCreatedClient] = useState<any>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [copyNotification, setCopyNotification] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -44,23 +44,18 @@ export default function NewClientPage() {
     }))
   }
 
-  const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setPictureFile(file)
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target
+    setFormData(prev => ({ ...prev, picture_url: value }))
 
-      // Create preview URL
-      const reader = new FileReader()
-      reader.onload = e => {
-        setPicturePreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
+    // Clear preview if URL is empty
+    if (!value.trim()) {
+      setLogoPreview(null)
     }
   }
 
-  const removePicture = () => {
-    setPictureFile(null)
-    setPicturePreview(null)
+  const removeLogo = () => {
+    setLogoPreview(null)
     setFormData(prev => ({ ...prev, picture_url: "" }))
   }
 
@@ -89,27 +84,25 @@ export default function NewClientPage() {
       setLoading(true)
       setError(null)
 
-      // Create form data for file upload
-      const submitData = new FormData()
-      submitData.append("name", formData.name.trim())
-      submitData.append("type", formData.type)
-      if (pictureFile) {
-        submitData.append("picture", pictureFile)
+      // Create JSON payload for URL submission
+      const submitData = {
+        name: formData.name.trim(),
+        type: formData.type,
+        picture_url: formData.picture_url || null,
       }
 
       const response = await fetch("/api/clients", {
         method: "POST",
-        body: submitData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(submitData),
       })
 
       if (response.ok) {
         const result = await response.json()
+        setCreatedClient(result)
         setSuccess(true)
-
-        // Redirect to client list after a short delay
-        setTimeout(() => {
-          router.push("/dashboard/clients")
-        }, 2000)
       } else {
         const errorData = await response.json()
         setError(errorData.error || "Failed to create client")
@@ -168,15 +161,88 @@ export default function NewClientPage() {
           <p className="text-gray-400 mb-6">
             The new client application has been created and is ready for use.
           </p>
-          <div className="space-y-3">
+
+          {/* Client Details */}
+          <div className="space-y-3 mb-6">
             <p className="text-sm text-gray-300">
-              <span className="font-medium">Name:</span> {formData.name}
+              <span className="font-medium">Name:</span> {createdClient.name}
             </p>
             <p className="text-sm text-gray-300">
-              <span className="font-medium">Type:</span> {formData.type}
+              <span className="font-medium">Type:</span> {createdClient.type}
+            </p>
+            <p className="text-sm text-gray-300">
+              <span className="font-medium">Client ID:</span> {createdClient.client_id}
             </p>
           </div>
-          <p className="text-sm text-gray-500 mt-6">Redirecting to clients list...</p>
+
+          {/* Client Secret Display (Only for web and M2M clients) */}
+          {createdClient.client_secret &&
+            (createdClient.type === "web" || createdClient.type === "M2M") && (
+              <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4 mb-6">
+                <div className="flex items-center space-x-2 mb-3">
+                  <AlertTriangle className="h-5 w-5 text-yellow-400" />
+                  <span className="text-yellow-400 font-medium">Important: Client Secret</span>
+                </div>
+                <p className="text-yellow-300 text-sm mb-3">
+                  This client secret will only be shown once. Copy it now and store it securely.
+                </p>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={createdClient.client_secret}
+                    readOnly
+                    className="flex-1 px-3 py-2 bg-gray-800 border border-yellow-600 rounded text-white text-sm font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdClient.client_secret)
+                      setCopyNotification(true)
+                      setTimeout(() => setCopyNotification(false), 2000)
+                    }}
+                    className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors text-sm"
+                  >
+                    {copyNotification ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+          {/* Note for Mobile Clients */}
+          {(createdClient.type === "native_mobile_android" ||
+            createdClient.type === "native_mobile_ios") && (
+            <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4 mb-6">
+              <div className="flex items-center space-x-2 mb-3">
+                <div className="w-5 h-5 bg-blue-400 rounded-full"></div>
+                <span className="text-blue-400 font-medium">Mobile App Note</span>
+              </div>
+              <p className="text-blue-300 text-sm">
+                Mobile applications are public clients and do not require a client secret for
+                authentication.
+              </p>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="space-x-4">
+            <Link
+              href="/dashboard/clients"
+              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              View All Clients
+            </Link>
+            <button
+              onClick={() => {
+                setSuccess(false)
+                setCreatedClient(null)
+                setFormData({ name: "", type: "web", picture_url: "" })
+                setLogoPreview(null)
+              }}
+              className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              Create Another Client
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -268,56 +334,68 @@ export default function NewClientPage() {
             </div>
           </div>
 
-          {/* Picture Upload */}
+          {/* Logo URL */}
           <div>
-            <label htmlFor="picture" className="block text-sm font-medium text-gray-300 mb-2">
-              Client Picture/Icon
+            <label htmlFor="picture_url" className="block text-sm font-medium text-gray-300 mb-2">
+              Client Logo URL
             </label>
             <div className="space-y-4">
-              {/* Picture Preview */}
-              {picturePreview && (
+              {/* Logo Preview */}
+              {logoPreview && (
                 <div className="flex items-center space-x-4">
                   <img
-                    src={picturePreview}
-                    alt="Picture preview"
+                    src={logoPreview}
+                    alt="Logo preview"
                     className="w-20 h-20 rounded-lg object-cover bg-gray-700"
+                    onError={e => {
+                      // Show error state for broken images
+                      e.currentTarget.style.display = "none"
+                      const errorDiv = e.currentTarget.nextElementSibling as HTMLElement
+                      if (errorDiv) {
+                        errorDiv.style.display = "block"
+                      }
+                    }}
                   />
+                  <div
+                    className="hidden w-20 h-20 rounded-lg bg-gray-700 border-2 border-red-500 flex items-center justify-center"
+                    style={{ display: "none" }}
+                  >
+                    <span className="text-red-400 text-xs text-center">Invalid URL</span>
+                  </div>
                   <button
                     type="button"
-                    onClick={removePicture}
+                    onClick={removeLogo}
                     className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
                   >
-                    Remove Picture
+                    Remove Logo
                   </button>
                 </div>
               )}
 
-              {/* File Input */}
-              <div className="flex items-center justify-center w-full">
-                <label
-                  htmlFor="picture"
-                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-colors"
-                >
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="w-8 h-8 mb-2 text-gray-400" />
-                    <p className="mb-2 text-sm text-gray-400">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                  </div>
-                  <input
-                    id="picture"
-                    name="picture"
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePictureChange}
-                    className="hidden"
-                  />
-                </label>
+              {/* URL Input */}
+              <div className="flex items-center space-x-3">
+                <input
+                  id="picture_url"
+                  name="picture_url"
+                  type="url"
+                  placeholder="https://example.com/logo.png"
+                  value={formData.picture_url || ""}
+                  onChange={handleLogoChange}
+                  className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+                {formData.picture_url && (
+                  <button
+                    type="button"
+                    onClick={() => setLogoPreview(formData.picture_url || null)}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    Preview
+                  </button>
+                )}
               </div>
             </div>
             <p className="mt-1 text-sm text-gray-500">
-              Optional: Upload a picture or icon to represent the client application
+              Enter the URL of the logo image. The image will be displayed as a preview above.
             </p>
           </div>
 

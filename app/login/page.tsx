@@ -3,7 +3,7 @@
 import { Suspense, useEffect } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Gamepad2, ShoppingBag, Users } from "lucide-react"
+import { Gamepad2, ShoppingBag, Users, Cog } from "lucide-react"
 
 function LoginContent() {
   const { user, isLoading } = useUser()
@@ -21,7 +21,7 @@ function LoginContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-waymo-primary flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500 mx-auto mb-4"></div>
           <p className="text-gray-400">Loading...</p>
@@ -34,7 +34,7 @@ function LoginContent() {
   const hasError = searchParams.get("error")
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-waymo-primary flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-8 text-center">
           <div className="mb-8">
@@ -44,7 +44,7 @@ function LoginContent() {
 
           {hasError && (
             <div className="mb-6 p-4 bg-red-900/20 border border-red-700 rounded-lg">
-              <p className="text-red-300 text-sm">❌ Logout failed. Please try again.</p>
+              <p className="text-red-400 text-sm">❌ Logout failed. Please try again.</p>
             </div>
           )}
 
@@ -52,11 +52,15 @@ function LoginContent() {
             <div className="flex items-center justify-center space-x-4">
               <div className="flex items-center space-x-2 text-gray-400">
                 <Gamepad2 className="w-5 h-5" />
-                <span className="text-sm">Technology Partners</span>
+                <span className="text-sm">Platform Partners</span>
               </div>
               <div className="flex items-center space-x-2 text-gray-400">
                 <ShoppingBag className="w-5 h-5" />
                 <span className="text-sm">Manufacturing Partners</span>
+              </div>
+              <div className="flex items-center space-x-2 text-gray-400">
+                <Cog className="w-5 h-5" />
+                <span className="text-sm">Fleet Maintenance Partners</span>
               </div>
             </div>
 
@@ -69,17 +73,25 @@ function LoginContent() {
           </div>
 
           <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
-            <a href="/auth/login?connection=email">
+            <a href="/auth/login">
               <button className="w-full text-lg py-3 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
-                Sign In with Email OTP
+                Sign In with Password
               </button>
             </a>
           </div>
 
           <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
-            <a href="/auth/login">
+            <a href="/auth/login?connection=email">
               <button className="w-full text-lg py-3 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
-                Sign In with Auth0
+                Sign In with Email
+              </button>
+            </a>
+          </div>
+
+          <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+            <a href="/auth/login?connection=waymo-okta">
+              <button className="w-full text-lg py-3 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                Sign In with Waymo
               </button>
             </a>
           </div>
@@ -96,7 +108,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="min-h-screen bg-waymo-primary flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500 mx-auto mb-4"></div>
             <p className="text-gray-400">Loading...</p>

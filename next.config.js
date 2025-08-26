@@ -6,7 +6,20 @@ const nextConfig = {
   reactStrictMode: process.env.NEXT_PUBLIC_STRICT_MODE !== "false",
 
   images: {
-    remotePatterns: [new URL("https://logo.clearbit.com/*")],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "logo.clearbit.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.auth0.com",
+      },
+      {
+        protocol: "https",
+        hostname: "s.gravatar.com",
+      },
+    ],
   },
 }
 

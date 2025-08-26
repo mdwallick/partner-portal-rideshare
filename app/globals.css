@@ -10,22 +10,55 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply bg-waymo-secondary hover:bg-waymo-secondary-dark text-white font-medium py-2 px-4 rounded-lg transition-colors;
   }
 
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply bg-waymo-neutral-200 hover:bg-waymo-neutral-300 text-waymo-neutral-900 font-medium py-2 px-4 rounded-lg transition-colors;
   }
 
   .btn-danger {
-    @apply bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply bg-waymo-danger hover:bg-waymo-danger-dark text-white font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+
+  .btn-success {
+    @apply bg-waymo-success hover:bg-waymo-success-dark text-white font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+
+  .btn-accent {
+    @apply bg-waymo-accent hover:bg-waymo-accent-dark text-white font-medium py-2 px-4 rounded-lg transition-colors;
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+    @apply bg-white rounded-lg shadow-sm border border-waymo-neutral-200 p-6;
   }
 
   .input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+    @apply w-full px-3 py-2 border border-waymo-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-waymo-accent focus:border-transparent;
   }
+
+  .card-dark {
+    @apply bg-waymo-neutral-800 rounded-lg shadow-lg border border-waymo-neutral-700 p-6;
+  }
+
+  .input-dark {
+    @apply w-full px-3 py-2 bg-waymo-neutral-700 border border-waymo-neutral-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-waymo-accent focus:border-transparent;
+  }
+}
+
+/* Leaflet Map Styles */
+.leaflet-container {
+  @apply rounded-lg;
+}
+
+.leaflet-popup-content {
+  @apply m-0;
+}
+
+.leaflet-popup-content-wrapper {
+  @apply rounded-lg;
+}
+
+.custom-car-icon {
+  @apply cursor-pointer;
 }

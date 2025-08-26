@@ -4,23 +4,15 @@ import { useState, useEffect } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import {
   Users,
-  Plus,
   Search,
-  Filter,
-  MoreVertical,
   Edit,
-  Trash2,
   Shield,
   User,
   Mail,
-  Calendar,
   CheckCircle,
   AlertTriangle,
   Eye,
-  Settings,
   UserPlus,
-  Building2,
-  Globe,
 } from "lucide-react"
 import Link from "next/link"
 import { User as UserType } from "@/lib/types"
@@ -135,31 +127,31 @@ export default function UsersPage() {
     }
   }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "active":
-        return <CheckCircle className="h-4 w-4" />
-      case "inactive":
-        return <AlertTriangle className="h-4 w-4" />
-      case "pending":
-        return <Mail className="h-4 w-4" />
-      default:
-        return <AlertTriangle className="h-4 w-4" />
-    }
-  }
+  // const getStatusIcon = (status: string) => {
+  //   switch (status) {
+  //     case "active":
+  //       return <CheckCircle className="h-4 w-4" />
+  //     case "inactive":
+  //       return <AlertTriangle className="h-4 w-4" />
+  //     case "pending":
+  //       return <Mail className="h-4 w-4" />
+  //     default:
+  //       return <AlertTriangle className="h-4 w-4" />
+  //   }
+  // }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800"
-      case "inactive":
-        return "bg-red-100 text-red-800"
-      case "pending":
-        return "bg-yellow-100 text-yellow-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case "active":
+  //       return "bg-green-100 text-green-800"
+  //     case "inactive":
+  //       return "bg-red-100 text-red-800"
+  //     case "pending":
+  //       return "bg-yellow-100 text-yellow-800"
+  //     default:
+  //       return "bg-gray-100 text-gray-800"
+  //   }
+  // }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {

@@ -5,10 +5,10 @@ export async function POST(request: NextRequest) {
     const { pathname } = await request.json()
 
     // Log to server terminal
-    console.log("\n\n\n\n\n")
-    console.log("===============================================")
-    console.log("\n")
-    console.log(`🌎 User navigated to: ${pathname}`)
+    // console.log("\n\n\n\n\n")
+    // console.log("===============================================")
+    // console.log("\n")
+    // console.log(`🌎 User navigated to: ${pathname}`)
 
     return NextResponse.json({ success: true })
   } catch (error) {

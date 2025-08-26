@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
+import { Partner } from "@/lib/types"
 import {
   Users,
   FileText,
@@ -14,15 +15,14 @@ import {
   Calendar,
   Shield,
   Globe,
+  Cog,
 } from "lucide-react"
 import Link from "next/link"
 
-interface Partner {
-  id: string
-  name: string
-  type: "technology" | "manufacturing"
-  logo_url?: string
-  created_at: string
+interface PartnerResponse {
+  role: string
+  partner: Partner
+  isSuperAdmin: boolean
 }
 
 interface DashboardStats {
@@ -33,12 +33,14 @@ interface DashboardStats {
   totalPartners?: number
   technologyPartners?: number
   manufacturingPartners?: number
+  fleetMaintenancePartners?: number
+  totalMaintenanceTasks?: number
 }
 
 export default function DashboardPage() {
   const { user, isLoading } = useUser()
   const [loading, setLoading] = useState(true)
-  const [partner, setPartner] = useState<Partner | null>(null)
+  const [partner, setPartner] = useState<PartnerResponse | null>(null)
   const [allPartners, setAllPartners] = useState<Partner[]>([])
   const [stats, setStats] = useState<DashboardStats>({})
   const [error, setError] = useState<string | null>(null)
@@ -65,24 +67,24 @@ export default function DashboardPage() {
       setError(null) // Clear any previous errors
 
       // First check if user is a super admin
-      console.log("🔍 Checking super admin status...")
+      // console.log("🔍 Checking super admin status...")
       const superAdminResponse = await fetch("/api/test-permissions")
-      console.log("📡 Super admin response status:", superAdminResponse.status)
+      // console.log("📡 Super admin response status:", superAdminResponse.status)
 
       if (superAdminResponse.ok) {
         const superAdminData = await superAdminResponse.json()
-        console.log("📋 Super admin data:", superAdminData)
+        // console.log("📋 Super admin data:", superAdminData)
 
         if (superAdminData.isSuperAdmin) {
-          console.log("✅ User is super admin, setting up super admin dashboard")
+          // console.log("✅ User is super admin, setting up super admin dashboard")
           setIsSuperAdmin(true)
           await fetchSuperAdminData()
           return
         } else {
-          console.log("❌ User is NOT super admin")
+          // console.log("❌ User is NOT super admin")
         }
       } else {
-        console.log("❌ Super admin check failed:", superAdminResponse.status)
+        // console.log("❌ Super admin check failed:", superAdminResponse.status)
       }
 
       // For non-super admins, fetch partner information
@@ -90,10 +92,10 @@ export default function DashboardPage() {
 
       if (partnerResponse.ok) {
         const partnerData = await partnerResponse.json()
-        if (partnerData) {
+        if (partnerData && partnerData.partner) {
           setPartner(partnerData)
           // Fetch stats based on partner type
-          await fetchPartnerStats(partnerData)
+          await fetchPartnerStats(partnerData.partner)
         } else {
           // No partner assigned
           setPartner(null)
@@ -126,6 +128,9 @@ export default function DashboardPage() {
           technologyPartners: partnersData.filter((p: Partner) => p.type === "technology").length,
           manufacturingPartners: partnersData.filter((p: Partner) => p.type === "manufacturing")
             .length,
+          fleetMaintenancePartners: partnersData.filter(
+            (p: Partner) => p.type === "fleet_maintenance"
+          ).length,
           recentActivity: partnersData.filter((p: Partner) => {
             const partnerDate = new Date(p.created_at)
             const now = new Date()
@@ -161,6 +166,9 @@ export default function DashboardPage() {
           const documents = await documentsResponse.json()
           statsData.totalDocuments = documents.length
         }
+      } else if (partnerData.type === "fleet_maintenance") {
+        // Fetch maintenance task stats (placeholder for now)
+        statsData.totalMaintenanceTasks = 0
       }
 
       // Fetch user stats
@@ -180,23 +188,23 @@ export default function DashboardPage() {
 
   if (isLoading || loading) {
     return (
-      <div className="flex items-center justify-center h-64 bg-gray-900">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      <div className="flex items-center justify-center h-64 bg-waymo-primary">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-waymo-secondary"></div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="text-white p-6">
-        <div className="flex items-center space-x-2 text-red-400 mb-4">
+      <div className="text-waymo-neutral-900 p-6">
+        <div className="flex items-center space-x-2 text-red-600 mb-4">
           <AlertTriangle className="h-5 w-5" />
           <span>Error loading dashboard</span>
         </div>
-        <p className="text-gray-400">{error}</p>
+        <p className="text-waymo-neutral-600">{error}</p>
         <button
           onClick={fetchDashboardData}
-          className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+          className="mt-4 px-4 py-2 bg-waymo-secondary text-white rounded-lg hover:bg-waymo-secondary-dark"
         >
           Retry
         </button>
@@ -222,7 +230,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="w-20 h-20 rounded-lg bg-orange-600 flex items-center justify-center">
+          <div className="w-20 h-20 rounded-lg bg-waymo-secondary flex items-center justify-center">
             <Shield className="h-10 w-10 text-white" />
           </div>
         </div>
@@ -247,7 +255,7 @@ export default function DashboardPage() {
                 <Globe className="h-6 w-6 text-white" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Technology</p>
+                <p className="text-sm font-medium text-gray-400">Platform</p>
                 <p className="text-2xl font-bold text-white">{stats.technologyPartners || 0}</p>
               </div>
             </div>
@@ -261,6 +269,20 @@ export default function DashboardPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-400">Manufacturing</p>
                 <p className="text-2xl font-bold text-white">{stats.manufacturingPartners || 0}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800 rounded-lg p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-600 rounded-lg">
+                <Cog className="h-6 w-6 text-white" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-400">Fleet Maintenance</p>
+                <p className="text-2xl font-bold text-white">
+                  {stats.fleetMaintenancePartners || 0}
+                </p>
               </div>
             </div>
           </div>
@@ -295,7 +317,7 @@ export default function DashboardPage() {
 
             <Link
               href="/dashboard/partners"
-              className="bg-blue-600 hover:bg-blue-700 rounded-lg p-6 text-white transition-colors"
+              className="bg-waymo-neutral-600 hover:bg-waymo-neutral-700 rounded-lg p-6 text-white transition-colors"
             >
               <div className="flex items-center mb-3">
                 <Building2 className="h-6 w-6 mr-3" />
@@ -303,95 +325,7 @@ export default function DashboardPage() {
               </div>
               <p className="text-sm opacity-90">View and manage all partners</p>
             </Link>
-
-            <Link
-              href="/dashboard/admin"
-              className="bg-orange-600 hover:bg-orange-700 rounded-lg p-6 text-white transition-colors"
-            >
-              <div className="flex items-center mb-3">
-                <Shield className="h-6 w-6 mr-3" />
-                <h3 className="text-lg font-semibold">Admin Panel</h3>
-              </div>
-              <p className="text-sm opacity-90">Manage partners and system settings</p>
-            </Link>
           </div>
-        </div>
-
-        {/* Recent Partners */}
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Recent Partners</h2>
-          {allPartners.length === 0 ? (
-            <div className="text-center text-gray-400 py-8">
-              <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-600" />
-              <p className="text-lg">No partners registered yet</p>
-              <p className="text-sm">Get started by creating your first partner</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {allPartners.slice(0, 5).map(partner => (
-                <div
-                  key={partner.id}
-                  className="flex items-center justify-between p-4 bg-gray-700 rounded-lg"
-                >
-                  <div className="flex items-center space-x-4">
-                    {partner.logo_url ? (
-                      <img
-                        src={partner.logo_url}
-                        alt={partner.name}
-                        className="w-10 h-10 rounded-lg object-cover bg-gray-600"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-gray-600 flex items-center justify-center">
-                        <Building2 className="h-5 w-5 text-gray-400" />
-                      </div>
-                    )}
-
-                    <div>
-                      <h3 className="text-white font-medium">{partner.name}</h3>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            partner.type === "technology"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-green-100 text-green-800"
-                          }`}
-                        >
-                          {partner.type === "technology" ? (
-                            <Globe className="h-3 w-3 mr-1" />
-                          ) : (
-                            <Shield className="h-3 w-3 mr-1" />
-                          )}
-                          {partner.type}
-                        </span>
-                        <span className="text-sm text-gray-400">
-                          Created {formatDate(partner.created_at)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/dashboard/partners/${partner.id}`}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-lg transition-colors"
-                    title="View Partner"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Link>
-                </div>
-              ))}
-
-              {allPartners.length > 5 && (
-                <div className="text-center pt-4">
-                  <Link
-                    href="/dashboard/partners"
-                    className="text-orange-400 hover:text-orange-300 text-sm font-medium"
-                  >
-                    View all {allPartners.length} partners →
-                  </Link>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     )
@@ -402,7 +336,7 @@ export default function DashboardPage() {
     return (
       <div className="text-white p-6">
         <div className="text-center">
-          <Building2 className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+          <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">No Partner Assigned</h2>
           <p className="text-gray-400 mb-4">
             You haven't been assigned to a partner organization yet.
@@ -426,32 +360,40 @@ export default function DashboardPage() {
         href: "/dashboard/users",
         icon: Users,
         description: "Invite and manage team members",
-        color: "bg-blue-600 hover:bg-blue-700",
+        color: "bg-waymo-accent hover:bg-waymo-accent-dark",
       },
       {
         name: "Settings",
         href: "/dashboard/settings",
         icon: Settings,
         description: "Configure partner settings",
-        color: "bg-gray-600 hover:bg-gray-700",
+        color: "bg-waymo-neutral-600 hover:bg-waymo-neutral-700",
       },
     ]
 
-    if (partner.type === "technology") {
+    if (partner.partner.type === "technology") {
       actions.unshift({
         name: "Add Client",
         href: "/dashboard/clients/new",
         icon: Plus,
         description: "Register a new client application",
-        color: "bg-green-600 hover:bg-green-700",
+        color: "bg-waymo-success hover:bg-waymo-success-dark",
       })
-    } else if (partner.type === "manufacturing") {
+    } else if (partner.partner.type === "manufacturing") {
       actions.unshift({
         name: "Add Document",
         href: "/dashboard/documents/new",
         icon: Plus,
         description: "Create a new document",
-        color: "bg-green-600 hover:bg-green-700",
+        color: "bg-waymo-success hover:bg-waymo-success-dark",
+      })
+    } else if (partner.partner.type === "fleet_maintenance") {
+      actions.unshift({
+        name: "Add Maintenance Task",
+        href: "/dashboard/fleet-maintenance/new",
+        icon: Plus,
+        description: "Create a new maintenance task",
+        color: "bg-waymo-success hover:bg-waymo-success-dark",
       })
     }
 
@@ -464,22 +406,22 @@ export default function DashboardPage() {
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white">Partner Dashboard</h1>
-          <p className="text-gray-400">Welcome back to {partner.name}</p>
+          <p className="text-gray-400">Welcome back to {partner.partner.name}</p>
           <div className="flex items-center space-x-2 mt-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-              {partner.type}
+              {partner.partner.type}
             </span>
             <span className="text-sm text-gray-500">
-              Member since {formatDate(partner.created_at)}
+              Member since {formatDate(partner.partner.created_at)}
             </span>
           </div>
         </div>
 
-        {partner.logo_url && (
+        {partner.partner.logo_url && (
           <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-800">
             <img
-              src={partner.logo_url}
-              alt={`${partner.name} logo`}
+              src={partner.partner.logo_url}
+              alt={`${partner.partner.name} logo`}
               className="w-full h-full object-cover"
             />
           </div>
@@ -488,9 +430,9 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gray-800 rounded-lg p-6">
+        <div className="bg-gray-800 rounded-lg p-6 shadow-sm">
           <div className="flex items-center">
-            <div className="p-2 bg-blue-600 rounded-lg">
+            <div className="p-2 bg-waymo-accent rounded-lg">
               <Users className="h-6 w-6 text-white" />
             </div>
             <div className="ml-4">
@@ -500,7 +442,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {partner.type === "technology" && (
+        {partner.partner.type === "technology" && (
           <div className="bg-gray-800 rounded-lg p-6">
             <div className="flex items-center">
               <div className="p-2 bg-green-600 rounded-lg">
@@ -514,7 +456,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {partner.type === "manufacturing" && (
+        {partner.partner.type === "manufacturing" && (
           <div className="bg-gray-800 rounded-lg p-6">
             <div className="flex items-center">
               <div className="p-2 bg-purple-600 rounded-lg">
@@ -523,6 +465,20 @@ export default function DashboardPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-400">Documents</p>
                 <p className="text-2xl font-bold text-white">{stats.totalDocuments || 0}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {partner.partner.type === "fleet_maintenance" && (
+          <div className="bg-gray-800 rounded-lg p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-600 rounded-lg">
+                <Cog className="h-6 w-6 text-white" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-400">Maintenance Tasks</p>
+                <p className="text-2xl font-bold text-white">{stats.totalMaintenanceTasks || 0}</p>
               </div>
             </div>
           </div>
@@ -563,24 +519,31 @@ export default function DashboardPage() {
 
       {/* Recent Activity */}
       <div className="bg-gray-800 rounded-lg p-6">
-        <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+        <h2 className="text-xl font-semibold mb-4 text-white">Recent Activity</h2>
         <div className="space-y-4">
           <div className="flex items-center space-x-3 text-gray-400">
             <Calendar className="h-4 w-4" />
             <span>Dashboard accessed</span>
             <span className="text-sm">Just now</span>
           </div>
-          {partner.type === "technology" && (
+          {partner.partner.type === "technology" && (
             <div className="flex items-center space-x-3 text-gray-400">
               <Users className="h-4 w-4" />
               <span>Client management available</span>
               <span className="text-sm">Ready</span>
             </div>
           )}
-          {partner.type === "manufacturing" && (
+          {partner.partner.type === "manufacturing" && (
             <div className="flex items-center space-x-3 text-gray-400">
               <FileText className="h-4 w-4" />
               <span>Document management available</span>
+              <span className="text-sm">Ready</span>
+            </div>
+          )}
+          {partner.partner.type === "fleet_maintenance" && (
+            <div className="flex items-center space-x-3 text-gray-400">
+              <Cog className="h-4 w-4" />
+              <span>Fleet maintenance management available</span>
               <span className="text-sm">Ready</span>
             </div>
           )}

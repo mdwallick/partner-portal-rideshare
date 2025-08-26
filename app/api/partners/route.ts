@@ -11,8 +11,8 @@ export async function GET() {
   try {
     const session = await auth0.getSession()
     const user = session?.user
-    console.log(`🔍 Fetching partners for user: ${user?.email} (${user?.sub})`)
-    console.log(`✅❗ FGA list all partner objects that ${user?.sub} is related to as can_view`)
+    // console.log(`🔍 Fetching partners for user: ${user?.email} (${user?.sub})`)
+    // console.log(`✅❗ FGA list all partner objects that ${user?.sub} is related to as can_view`)
 
     // Use ListObjects to get all partners the user has access to
     // This will return all partners for super admins and only accessible partners for regular users
@@ -34,7 +34,7 @@ export async function GET() {
       orderBy: { created_at: "desc" },
     })
 
-    console.log(`🗄️ Fetched ${partners.length} partners from database`)
+    // console.log(`🗄️ Fetched ${partners.length} partners from database`)
     return NextResponse.json(partners)
   } catch (error) {
     console.error("Error fetching partners:", error)
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth0.getSession()
     const user = session?.user
-    console.log(`👤 Creating partner for user: ${user?.email} (${user?.sub})`)
+    // console.log(`👤 Creating partner for user: ${user?.email} (${user?.sub})`)
 
     // Check if user has platform-level super admin access
     const hasSuperAdminAccess = await checkPlatformPermission(
@@ -61,43 +61,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Parse FormData for file uploads
-    const formData = await request.formData()
-    const name = formData.get("name") as string
-    const typeString = formData.get("type") as string
-    const logoFile = formData.get("logo") as File | null
+    // Parse JSON body
+    const body = await request.json()
+    const name = body.name as string
+    const typeString = body.type as string
+    const logo_url = body.logo_url as string | null
+    const metroAreaIds = body.metroAreaIds as string | null
 
-    console.log("🔍 Form data:", { name, typeString, hasLogo: !!logoFile })
+    // console.log("🔍 Request body:", { name, typeString, logo_url, metroAreaIds })
 
     if (!name || !typeString) {
       return NextResponse.json({ error: "Name and type are required" }, { status: 400 })
     }
 
-    if (!["technology", "manufacturing"].includes(typeString)) {
+    if (!["technology", "manufacturing", "fleet_maintenance"].includes(typeString)) {
       return NextResponse.json(
-        { error: "Invalid partner type. Must be 'technology' or 'manufacturing'" },
+        {
+          error:
+            "Invalid partner type. Must be 'technology', 'manufacturing', or 'fleet_maintenance'",
+        },
         { status: 400 }
       )
     }
 
     // Convert string to PartnerType enum
     const type = typeString as PartnerType
-
-    console.log("🔍 Type conversion:")
-    console.log("  📝 typeString:", typeString, "Type:", typeof typeString)
-    console.log("  🎯 type:", type, "Type:", typeof type)
-    console.log("  ✅ Valid enum values:", ["technology", "manufacturing"])
-
-    // Handle logo file upload (for now, just store the filename)
-    // In a real implementation, you'd upload to a file storage service
-    let logo_url: string | null = null
-    if (logoFile) {
-      // For now, just use the filename as a placeholder
-      // In production, you'd upload to S3, Cloudinary, etc.
-      logo_url = `uploads/${logoFile.name}`
-      console.log("📁 Logo file received:", logoFile.name, "Size:", logoFile.size)
-    }
-
     const partnerId = uuidv4()
 
     // Create group in Auth0 (Organization)
@@ -115,19 +103,12 @@ export async function POST(request: NextRequest) {
         },
       })
       orgId = org.id
-      console.log(`🚀 Created organization: ${orgId} (${partner_name}) for partner: ${partnerId}`)
+      // console.log(`🚀 Created organization: ${orgId} (${partner_name}) for partner: ${partnerId}`)
     } catch (error) {
       console.error("Error creating Auth0 organization:", error)
       // Continue with partner creation even if organization creation fails
       // The organization_id will be null in this case
     }
-
-    console.log("🗄️ Creating partner in database with data:")
-    console.log("  🆔 ID:", partnerId)
-    console.log("  📛 Name:", name)
-    console.log("  🏷️ Type:", type, "Type:", typeof type)
-    console.log("  🏢 Org ID:", orgId)
-    console.log("  🖼️ Logo:", logo_url)
 
     const newPartner = await prisma.partner.create({
       data: {
@@ -139,12 +120,32 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    console.log(`🗄️ Created partner in database: ${name} (${partnerId})`)
+    // console.log(`🗄️ Created partner in database: ${name} (${partnerId})`)
+
+    // Handle metro area assignment if provided
+    if (metroAreaIds && (type === "technology" || type === "fleet_maintenance")) {
+      try {
+        // console.log("🗺️ Processing metro area assignment:", metroAreaIds)
+        const metroAreaIdArray = metroAreaIds.split(",").filter(id => id.trim())
+        if (metroAreaIdArray.length > 0) {
+          const metroAreaAssignments = metroAreaIdArray.map(metroAreaId => ({
+            partner_id: partnerId,
+            metro_area_id: metroAreaId.trim(),
+          }))
+          await prisma.partnerMetroArea.createMany({ data: metroAreaAssignments })
+          // console.log(
+          //   `✅ Created metro area assignments for partner ${partnerId}:`,
+          //   metroAreaIdArray
+          // )
+        }
+      } catch (metroError) {
+        console.error("❌ Error creating metro area assignments:", metroError)
+        // Continue with partner creation even if metro area assignment fails
+      }
+    }
 
     // Create FGA tuples for the new partner
     try {
-      console.log(`Creating FGA tuples for partner: ${partnerId}`)
-
       // 1. Create parent relationship: platform:default -> partner:PARTNERID (parent)
       const parentTupleCreated = await writeTuple(
         "platform:default",

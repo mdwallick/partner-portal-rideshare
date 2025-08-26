@@ -7,27 +7,33 @@ import {
   Building2,
   Save,
   X,
-  Upload,
   Globe,
   Shield,
   AlertTriangle,
   CheckCircle,
   ArrowLeft,
+  Cog,
 } from "lucide-react"
 import Link from "next/link"
 
 interface Partner {
   id: string
   name: string
-  type: "technology" | "manufacturing"
+  type: "technology" | "manufacturing" | "fleet_maintenance"
   logo_url?: string
   created_at: string
 }
 
 interface PartnerFormData {
   name: string
-  type: "technology" | "manufacturing"
+  type: "technology" | "manufacturing" | "fleet_maintenance"
   logo_url?: string
+}
+
+interface MetroArea {
+  id: string
+  name: string
+  airport_code: string
 }
 
 export default function EditPartnerPage() {
@@ -46,14 +52,60 @@ export default function EditPartnerPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [userPartner, setUserPartner] = useState<any>(null)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [accessDenied, setAccessDenied] = useState(false)
+  const [metroAreas, setMetroAreas] = useState<MetroArea[]>([])
+  const [assignedMetroAreas, setAssignedMetroAreas] = useState<string[]>([])
+  const [loadingMetroAreas, setLoadingMetroAreas] = useState(false)
 
   useEffect(() => {
     if (partnerId) {
-      fetchPartner()
+      checkAccessAndFetchPartner()
     }
   }, [partnerId])
+
+  const checkAccessAndFetchPartner = async () => {
+    try {
+      // First check if user is a super admin
+      const superAdminResponse = await fetch("/api/test-permissions")
+      if (superAdminResponse.ok) {
+        const superAdminData = await superAdminResponse.json()
+        if (superAdminData.isSuperAdmin) {
+          setIsSuperAdmin(true)
+          // Super admins can edit any partner
+          await fetchPartner()
+          // Fetch metro areas after super admin status is set
+          await fetchMetroAreas()
+          return
+        }
+      }
+
+      // For non-super admins, check if they can edit this specific partner
+      const partnerResponse = await fetch("/api/partners/me")
+      if (partnerResponse.ok) {
+        const partnerData = await partnerResponse.json()
+        setUserPartner(partnerData)
+
+        if (partnerData.partner && partnerData.partner.id === partnerId) {
+          // User can edit this partner (it's their own)
+          await fetchPartner()
+        } else {
+          // User cannot edit this partner
+          setAccessDenied(true)
+          setLoading(false)
+        }
+      } else {
+        setAccessDenied(true)
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error("Error checking access:", error)
+      setAccessDenied(true)
+      setLoading(false)
+    }
+  }
 
   const fetchPartner = async () => {
     try {
@@ -69,6 +121,13 @@ export default function EditPartnerPage() {
         if (partnerData.logo_url) {
           setLogoPreview(partnerData.logo_url)
         }
+
+        // Set assigned metro areas if they exist
+        if (partnerData.metroAreas && Array.isArray(partnerData.metroAreas)) {
+          const metroAreaIds = partnerData.metroAreas.map((metro: any) => metro.id)
+          setAssignedMetroAreas(metroAreaIds)
+          console.log("🗺️ Set assigned metro areas from partner data:", metroAreaIds)
+        }
       } else {
         setError("Failed to fetch partner information")
       }
@@ -77,6 +136,29 @@ export default function EditPartnerPage() {
       setError("Failed to load partner data")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchMetroAreas = async () => {
+    try {
+      console.log("🔍 Fetching metro areas...")
+      setLoadingMetroAreas(true)
+      const response = await fetch("/api/metro-areas")
+      console.log("📡 Metro areas response status:", response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("📋 Metro areas data received:", data)
+        setMetroAreas(data)
+      } else {
+        console.log("❌ Metro areas fetch failed with status:", response.status)
+        const errorText = await response.text()
+        console.log("❌ Error response:", errorText)
+      }
+    } catch (error) {
+      console.error("❌ Error fetching metro areas:", error)
+    } finally {
+      setLoadingMetroAreas(false)
     }
   }
 
@@ -89,21 +171,12 @@ export default function EditPartnerPage() {
   }
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setLogoFile(file)
-
-      // Create preview URL
-      const reader = new FileReader()
-      reader.onload = e => {
-        setLogoPreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
+    const url = e.target.value
+    setFormData(prev => ({ ...prev, logo_url: url }))
+    setLogoPreview(url)
   }
 
   const removeLogo = () => {
-    setLogoFile(null)
     setLogoPreview(null)
     setFormData(prev => ({ ...prev, logo_url: "" }))
   }
@@ -121,6 +194,17 @@ export default function EditPartnerPage() {
       setError("Partner type is required")
       return false
     }
+
+    // Validate logo URL if provided
+    if (formData.logo_url && formData.logo_url.trim()) {
+      try {
+        new URL(formData.logo_url.trim())
+      } catch {
+        setError("Please enter a valid logo URL")
+        return false
+      }
+    }
+
     return true
   }
 
@@ -133,17 +217,28 @@ export default function EditPartnerPage() {
       setSaving(true)
       setError(null)
 
-      // Create form data for file upload
-      const submitData = new FormData()
-      submitData.append("name", formData.name.trim())
-      submitData.append("type", formData.type)
-      if (logoFile) {
-        submitData.append("logo", logoFile)
+      // Create request body for JSON submission
+      const requestBody: any = {
+        name: formData.name.trim(),
+        type: formData.type,
+        logo_url: formData.logo_url || null,
+      }
+
+      // Add metro areas if super admin and partner type supports it
+      if (
+        isSuperAdmin &&
+        (formData.type === "technology" || formData.type === "fleet_maintenance")
+      ) {
+        requestBody.metroAreaIds = assignedMetroAreas.join(",")
+        console.log("🗺️ Including metro areas in submission:", requestBody.metroAreaIds)
       }
 
       const response = await fetch(`/api/partners/${partnerId}`, {
         method: "PUT",
-        body: submitData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
       })
 
       if (response.ok) {
@@ -169,6 +264,43 @@ export default function EditPartnerPage() {
     return (
       <div className="flex items-center justify-center h-64 bg-gray-900">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      </div>
+    )
+  }
+
+  if (accessDenied) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center space-x-3 mb-8">
+            <Building2 className="h-8 w-8 text-orange-500" />
+            <h1 className="text-3xl font-bold">Access Denied</h1>
+          </div>
+
+          <div className="bg-red-900/20 border border-red-700 rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-red-400 mb-2">Access Restricted</h2>
+            <p className="text-red-300 mb-4">
+              You don't have permission to edit this partner record. You can only edit your own
+              partner information.
+            </p>
+            <div className="space-x-4">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Back to Dashboard
+              </Link>
+              {userPartner?.partner && (
+                <Link
+                  href={`/dashboard/partners/${userPartner.partner.id}/edit`}
+                  className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                >
+                  Edit My Partner
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -203,6 +335,13 @@ export default function EditPartnerPage() {
             <p className="text-sm text-gray-300">
               <span className="font-medium">Type:</span> {formData.type}
             </p>
+            {isSuperAdmin &&
+              (formData.type === "technology" || formData.type === "fleet_maintenance") && (
+                <p className="text-sm text-gray-300">
+                  <span className="font-medium">Metro Areas:</span> {assignedMetroAreas.length}{" "}
+                  assigned
+                </p>
+              )}
           </div>
           <p className="text-sm text-gray-500 mt-6">Redirecting to partner details...</p>
         </div>
@@ -254,7 +393,20 @@ export default function EditPartnerPage() {
 
       {/* Current Partner Info */}
       <div className="mb-8 p-4 bg-gray-800 rounded-lg border border-gray-700">
-        <h3 className="text-sm font-medium text-gray-400 mb-2">Current Partner</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium text-gray-400">Current Partner</h3>
+          {isSuperAdmin ? (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <Shield className="h-3 w-3 mr-1" />
+              Super Admin Access
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <Building2 className="h-3 w-3 mr-1" />
+              Your Partner
+            </span>
+          )}
+        </div>
         <div className="flex items-center space-x-4">
           {partner.logo_url ? (
             <img
@@ -274,15 +426,23 @@ export default function EditPartnerPage() {
                 className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                   partner.type === "technology"
                     ? "bg-blue-100 text-blue-800"
-                    : "bg-green-100 text-green-800"
+                    : partner.type === "manufacturing"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-purple-100 text-purple-800"
                 }`}
               >
                 {partner.type === "technology" ? (
                   <Globe className="h-3 w-3 mr-1" />
-                ) : (
+                ) : partner.type === "manufacturing" ? (
                   <Shield className="h-3 w-3 mr-1" />
+                ) : (
+                  <div className="w-3 h-3 bg-purple-400 rounded-full mr-1"></div>
                 )}
-                {partner.type}
+                {partner.type === "technology"
+                  ? "Platform"
+                  : partner.type === "manufacturing"
+                    ? "Manufacturing"
+                    : "Fleet Maintenance"}
               </span>
               <span className="text-sm text-gray-400">
                 Created {new Date(partner.created_at).toLocaleDateString()}
@@ -338,21 +498,22 @@ export default function EditPartnerPage() {
               className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               required
             >
-              <option value="technology">Technology Partner</option>
+              <option value="technology">Platform Partner</option>
               <option value="manufacturing">Manufacturing Partner</option>
+              <option value="fleet_maintenance">Fleet Maintenance Partner</option>
             </select>
             <div className="mt-2 flex items-start space-x-3 p-3 bg-gray-800/50 rounded-lg">
               {formData.type === "technology" ? (
                 <>
                   <Globe className="h-5 w-5 text-blue-400 mt-0.5" />
                   <div className="text-sm">
-                    <p className="text-blue-400 font-medium">Technology Partner</p>
+                    <p className="text-blue-400 font-medium">Platform Partner</p>
                     <p className="text-gray-400">
                       Manages client applications (mobile apps, web apps, M2M integrations)
                     </p>
                   </div>
                 </>
-              ) : (
+              ) : formData.type === "manufacturing" ? (
                 <>
                   <Shield className="h-5 w-5 text-green-400 mt-0.5" />
                   <div className="text-sm">
@@ -362,24 +523,50 @@ export default function EditPartnerPage() {
                     </p>
                   </div>
                 </>
+              ) : (
+                <>
+                  <Cog className="h-5 w-5 text-purple-400 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="text-purple-400 font-medium">Fleet Maintenance Partner</p>
+                    <p className="text-gray-400">
+                      Manages autonomous vehicle maintenance, software updates, and fleet operations
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           </div>
 
-          {/* Logo Upload */}
+          {/* Logo URL */}
           <div>
-            <label htmlFor="logo" className="block text-sm font-medium text-gray-300 mb-2">
-              Partner Logo
+            <label htmlFor="logo_url" className="block text-sm font-medium text-gray-300 mb-2">
+              Partner Logo URL
             </label>
             <div className="space-y-4">
               {/* Logo Preview */}
               {logoPreview && (
                 <div className="flex items-center space-x-4">
-                  <img
-                    src={logoPreview}
-                    alt="Logo preview"
-                    className="w-20 h-20 rounded-lg object-cover bg-gray-700"
-                  />
+                  <div className="relative">
+                    <img
+                      src={logoPreview}
+                      alt="Logo preview"
+                      className="w-20 h-20 rounded-lg object-cover bg-gray-700"
+                      onError={e => {
+                        // Show error state for broken images
+                        e.currentTarget.style.display = "none"
+                        const errorDiv = e.currentTarget.nextElementSibling as HTMLElement
+                        if (errorDiv) {
+                          errorDiv.style.display = "block"
+                        }
+                      }}
+                    />
+                    <div
+                      className="hidden w-20 h-20 rounded-lg bg-gray-700 border-2 border-red-500 flex items-center justify-center"
+                      style={{ display: "none" }}
+                    >
+                      <span className="text-red-400 text-xs text-center">Invalid URL</span>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={removeLogo}
@@ -390,34 +577,93 @@ export default function EditPartnerPage() {
                 </div>
               )}
 
-              {/* File Input */}
-              <div className="flex items-center justify-center w-full">
-                <label
-                  htmlFor="logo"
-                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-colors"
-                >
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="w-8 h-8 mb-2 text-gray-400" />
-                    <p className="mb-2 text-sm text-gray-400">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                  </div>
-                  <input
-                    id="logo"
-                    name="logo"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoChange}
-                    className="hidden"
-                  />
-                </label>
+              {/* URL Input */}
+              <div className="flex items-center space-x-3">
+                <input
+                  id="logo_url"
+                  name="logo_url"
+                  type="url"
+                  placeholder="https://example.com/logo.png"
+                  value={formData.logo_url || ""}
+                  onChange={handleLogoChange}
+                  className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+                {formData.logo_url && (
+                  <button
+                    type="button"
+                    onClick={() => setLogoPreview(formData.logo_url || null)}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    Preview
+                  </button>
+                )}
               </div>
             </div>
             <p className="mt-1 text-sm text-gray-500">
-              Upload a new logo to replace the current one, or leave empty to keep the existing logo
+              Enter the URL of the logo image. The image will be displayed as a preview above.
             </p>
           </div>
+
+          {/* Metro Area Management (Super Admin Only) */}
+
+          {isSuperAdmin &&
+            (formData.type === "technology" || formData.type === "fleet_maintenance") && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Metro Areas Access
+                </label>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-400">
+                    Select which metro areas this partner can access for rideshare operations.
+                    Changes will be saved when you click "Save Changes" below.
+                  </p>
+
+                  {loadingMetroAreas ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500 mr-2"></div>
+                      <span className="text-gray-400">Loading metro areas...</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                      {metroAreas.map(metro => (
+                        <label
+                          key={metro.id}
+                          className="flex items-center space-x-3 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={assignedMetroAreas.includes(metro.id)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setAssignedMetroAreas(prev => [...prev, metro.id])
+                              } else {
+                                setAssignedMetroAreas(prev => prev.filter(id => id !== metro.id))
+                              }
+                            }}
+                            className="rounded border-gray-600 text-orange-600 focus:ring-orange-500 focus:ring-offset-gray-800"
+                          />
+                          <div>
+                            <span className="text-sm font-medium text-white">{metro.name}</span>
+                            <span className="text-xs text-gray-400 ml-2">
+                              ({metro.airport_code})
+                            </span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-gray-500">
+                      {assignedMetroAreas.length} metro area(s) selected
+                    </p>
+                    <p className="text-xs text-blue-400">
+                      Metro areas will be saved with partner changes
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
           {/* Submit Button */}
           <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-700">
@@ -435,7 +681,10 @@ export default function EditPartnerPage() {
               {saving ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Saving...
+                  {isSuperAdmin &&
+                  (formData.type === "technology" || formData.type === "fleet_maintenance")
+                    ? "Saving Partner & Metro Areas..."
+                    : "Saving..."}
                 </>
               ) : (
                 <>
@@ -456,7 +705,7 @@ export default function EditPartnerPage() {
             <div className="flex items-start space-x-3">
               <Globe className="h-5 w-5 text-blue-400 mt-0.5" />
               <div>
-                <h4 className="font-medium text-blue-400">Technology Partners</h4>
+                <h4 className="font-medium text-blue-400">Platform Partners</h4>
                 <p className="text-sm text-gray-400">
                   Develop and manage client applications. They can register mobile apps, web
                   applications, and M2M integrations. Access to client management tools and API
@@ -471,6 +720,19 @@ export default function EditPartnerPage() {
                 <p className="text-sm text-gray-400">
                   Create and manage manufacturing documents, specifications, and technical
                   documentation. Access to document management tools and version control.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="h-5 w-5 text-purple-400 mt-0.5 flex items-center justify-center">
+                <div className="w-3 h-3 bg-purple-400 rounded-full"></div>
+              </div>
+              <div>
+                <h4 className="font-medium text-purple-400">Fleet Maintenance Partners</h4>
+                <p className="text-sm text-gray-400">
+                  Perform mechanical maintenance and software updates on autonomous vehicles. Access
+                  to maintenance task management, software update tools, and vehicle health
+                  monitoring.
                 </p>
               </div>
             </div>

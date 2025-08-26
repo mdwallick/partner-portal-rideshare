@@ -22,11 +22,13 @@ model Partner {
   client_ids      ClientId[]
   documents       Document[]
   partnerUsers    PartnerUser[]
+  metroAreas      PartnerMetroArea[]
 }
 
 enum PartnerType {
   technology
   manufacturing
+  fleet_maintenance
 }
 
 model User {
@@ -99,6 +101,27 @@ model Document {
   status      String   @default("active")
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
+}
+
+model MetroArea {
+  id           String   @id @default(uuid())
+  name         String
+  airport_code String   @unique
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  partners PartnerMetroArea[]
+}
+
+model PartnerMetroArea {
+  id           String   @id @default(uuid())
+  partner      Partner  @relation(fields: [partner_id], references: [id])
+  partner_id   String
+  metro_area   MetroArea @relation(fields: [metro_area_id], references: [id])
+  metro_area_id String
+  created_at   DateTime @default(now())
+
+  @@unique([partner_id, metro_area_id])
 }
 
 model AuditLog {

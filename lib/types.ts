@@ -26,7 +26,7 @@ export interface User {
 export interface Partner {
   id: string
   name: string
-  type: "technology" | "manufacturing"
+  type: "technology" | "manufacturing" | "fleet_maintenance"
   logo_url?: string
   organization_id?: string
   status: string

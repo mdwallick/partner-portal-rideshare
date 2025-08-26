@@ -28,9 +28,6 @@ export default function NewUserPage() {
   const [name, setName] = useState("")
   const [role, setRole] = useState("")
   const [partnerId, setPartnerId] = useState("")
-  const [clientType, setClientType] = useState<
-    "native_mobile_android" | "native_mobile_ios" | "web" | "M2M"
-  >("web")
 
   useEffect(() => {
     if (user) {
@@ -105,7 +102,6 @@ export default function NewUserPage() {
         name: name.trim(),
         role,
         partnerId,
-        clientType,
       }),
     })
 
@@ -346,32 +342,6 @@ export default function NewUserPage() {
               )}
             </div>
 
-            {/* Client Type (Super Admin Only) */}
-            {isSuperAdmin && (
-              <div>
-                <label
-                  htmlFor="clientType"
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  Client Type (Optional)
-                </label>
-                <select
-                  id="clientType"
-                  value={clientType}
-                  onChange={e => setClientType(e.target.value as any)}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                >
-                  <option value="web">Web Application</option>
-                  <option value="native_mobile_android">Android Mobile App</option>
-                  <option value="native_mobile_ios">iOS Mobile App</option>
-                  <option value="M2M">Machine-to-Machine</option>
-                </select>
-                <p className="text-sm text-gray-400 mt-1">
-                  This will create a client application for the user if specified
-                </p>
-              </div>
-            )}
-
             {/* Submit Button */}
             <div className="pt-4">
               <button
@@ -412,10 +382,9 @@ export default function NewUserPage() {
               </h4>
               <ul className="text-blue-200 text-xs space-y-1">
                 <li>• Auth0 user account created with secure temporary password</li>
-                <li>• User added to partner's Auth0 organization</li>
-                <li>• Password reset email sent to user's email address</li>
-                <li>• User can immediately log in using password reset</li>
-                <li>• Optional client application created if specified</li>
+                <li>• User added to partner&apos;s Auth0 organization</li>
+                <li>• Password reset email sent to user&apos;s email address</li>
+                <li>• User can immediately log in using the password reset email</li>
               </ul>
             </div>
           )}

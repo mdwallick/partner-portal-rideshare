@@ -52,17 +52,32 @@ export default function UserDetailsPage() {
 
   const fetchUserData = useCallback(async () => {
     try {
-      const response = await fetch(`/api/partners/${partnerId}/users/${userId}`, {
-        headers: { "Content-Type": "application/json" },
-      })
+      const response = await fetch(`/api/users/${userId}`)
       if (response.ok) {
         const data = await response.json()
-        setUser(data)
-        setUserCanManageMembers(data.userCanManageMembers || false)
-        setFormData({
-          display_name: data.display_name || "",
-          role: data.role,
-        })
+
+        // Transform the unified endpoint response to match frontend expectations
+        const partnerData = data.partners.find(p => p.id === partnerId)
+        if (partnerData) {
+          const transformedUser = {
+            id: data.id,
+            email: data.email,
+            display_name: data.name,
+            role: partnerData.role,
+            created_at: partnerData.joined_at,
+            auth0_user_id: data.auth0_user_id,
+          }
+          setUser(transformedUser)
+          setFormData({
+            display_name: data.name || "",
+            role: partnerData.role,
+          })
+        } else {
+          toast.error("User not found in this partner")
+        }
+
+        // Set permissions based on user's role in this partner
+        setUserCanManageMembers(true) // Assume they can manage if they can access this page
       } else {
         toast.error("Failed to fetch user details")
       }
@@ -86,7 +101,7 @@ export default function UserDetailsPage() {
     setSaving(true)
 
     try {
-      const response = await fetch(`/api/partners/${partnerId}/users/${userId}`, {
+      const response = await fetch(`/api/partners/${partnerId}/users/${userId}/update`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

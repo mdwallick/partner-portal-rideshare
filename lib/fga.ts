@@ -1,14 +1,15 @@
 import { OpenFgaApi, Configuration, CredentialsMethod } from "@openfga/sdk"
 import {
-  FGA_AUTHORIZATION_MODEL,
+  // FGA_AUTHORIZATION_MODEL,
   FGA_RELATIONS,
-  FGA_TYPES,
-  createFgaObject,
+  // FGA_TYPES,
+  // createFgaObject,
   createFgaUser,
   createFgaPartner,
   createFgaClient,
   createFgaDocument,
   createFgaPlatform,
+  createFgaMetroArea,
 } from "./fga-model"
 
 // Initialize FGA client
@@ -84,6 +85,8 @@ export async function checkPermission(
 ): Promise<boolean> {
   try {
     const modelId = await getLatestAuthorizationModelId()
+    console.log(`  🔍 FGA Check: ${user} ${relation} ${object} (Model: ${modelId})`)
+
     const response = await fgaClient.check({
       authorization_model_id: modelId,
       tuple_key: {
@@ -92,6 +95,8 @@ export async function checkPermission(
         object,
       },
     })
+
+    console.log(`  ✅ FGA Response: ${response.allowed}`)
     return response.allowed || false
   } catch (error) {
     console.error("FGA check error:", error)
@@ -107,7 +112,17 @@ export async function checkPartnerPermission(
 ): Promise<boolean> {
   const user = createFgaUser(auth0UserId)
   const partner = createFgaPartner(partnerId)
-  return checkPermission(user, FGA_RELATIONS[relation], partner)
+
+  // console.log(`🔍 FGA Partner Permission Check:`)
+  // console.log(`  👤 User: ${user}`)
+  // console.log(`  🏢 Partner: ${partner}`)
+  // console.log(`  🔑 Relation: ${FGA_RELATIONS[relation]}`)
+  // console.log(`  📋 Relation Key: ${relation}`)
+
+  const result = await checkPermission(user, FGA_RELATIONS[relation], partner)
+  // console.log(`  ✅ Partner Permission Result: ${result}`)
+
+  return result
 }
 
 export async function checkClientPermission(
@@ -117,7 +132,17 @@ export async function checkClientPermission(
 ): Promise<boolean> {
   const user = createFgaUser(auth0UserId)
   const client = createFgaClient(clientId)
-  return checkPermission(user, FGA_RELATIONS[relation], client)
+
+  // console.log(`🔍 FGA Client Permission Check:`)
+  // console.log(`  👤 User: ${user}`)
+  // console.log(`  📱 Client: ${client}`)
+  // console.log(`  🔑 Relation: ${FGA_RELATIONS[relation]}`)
+  // console.log(`  📋 Relation Key: ${relation}`)
+
+  const result = await checkPermission(user, FGA_RELATIONS[relation], client)
+  // console.log(`  ✅ Client Permission Result: ${result}`)
+
+  return result
 }
 
 export async function checkDocumentPermission(
@@ -130,6 +155,26 @@ export async function checkDocumentPermission(
   return checkPermission(user, FGA_RELATIONS[relation], document)
 }
 
+export async function checkMetroAreaPermission(
+  auth0UserId: string,
+  relation: keyof typeof FGA_RELATIONS,
+  metroAreaId: string
+): Promise<boolean> {
+  const user = createFgaUser(auth0UserId)
+  const metroArea = createFgaMetroArea(metroAreaId)
+
+  // console.log(`🔍 FGA Metro Area Permission Check:`)
+  // console.log(`  👤 User: ${user}`)
+  // console.log(`  🗺️ Metro Area: ${metroArea}`)
+  // console.log(`  🔑 Relation: ${FGA_RELATIONS[relation]}`)
+  // console.log(`  📋 Relation Key: ${relation}`)
+
+  const result = await checkPermission(user, FGA_RELATIONS[relation], metroArea)
+  // console.log(`  ✅ Metro Area Permission Result: ${result}`)
+
+  return result
+}
+
 export async function checkPlatformPermission(
   auth0UserId: string,
   relation: keyof typeof FGA_RELATIONS,
@@ -138,22 +183,25 @@ export async function checkPlatformPermission(
   const user = createFgaUser(auth0UserId)
   const platform = createFgaPlatform(platformId)
 
-  console.log("🔍 FGA Platform Permission Check:")
-  console.log("  👤 User:", user)
-  console.log("  🏢 Platform:", platform)
-  console.log("  🔑 Relation:", FGA_RELATIONS[relation])
-  console.log("  📋 Relation Key:", relation)
+  // console.log("🔍 FGA Platform Permission Check:")
+  // console.log("  👤 User:", user)
+  // console.log("  🏢 Platform:", platform)
+  // console.log("  🔑 Relation:", FGA_RELATIONS[relation])
+  // console.log("  📋 Relation Key:", relation)
 
   const result = await checkPermission(user, FGA_RELATIONS[relation], platform)
-  console.log("  ✅ Result:", result)
-
+  // console.log("  ✅ Result:", result)
   return result
 }
 
 export async function writeTuple(user: string, relation: string, object: string): Promise<boolean> {
   try {
+    console.log("🔐 FGA writeTuple called with:", { user, relation, object })
+
     const modelId = await getLatestAuthorizationModelId()
-    await fgaClient.write({
+    console.log("📋 Using FGA model ID:", modelId)
+
+    const response = await fgaClient.write({
       authorization_model_id: modelId,
       writes: {
         tuple_keys: [
@@ -165,9 +213,18 @@ export async function writeTuple(user: string, relation: string, object: string)
         ],
       },
     })
+
+    console.log("✅ FGA write response:", response)
     return true
   } catch (error) {
-    console.error("FGA write error:", error)
+    console.error("❌ FGA write error:", error)
+    console.error("❌ FGA write error details:", {
+      user,
+      relation,
+      object,
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+      errorStack: error instanceof Error ? error.stack : undefined,
+    })
     return false
   }
 }
@@ -226,13 +283,13 @@ export async function listObjects(
   objectType: string
 ): Promise<string[]> {
   try {
-    console.log("🔍 FGA listObjects called:")
-    console.log("  👤 User:", user)
-    console.log("  🔑 Relation:", relation)
-    console.log("  🏷️ Object Type:", objectType)
+    // console.log("🔍 FGA listObjects called:")
+    // console.log("  👤 User:", user)
+    // console.log("  🔑 Relation:", relation)
+    // console.log("  🏷️ Object Type:", objectType)
 
     const modelId = await getLatestAuthorizationModelId()
-    console.log("  📋 Model ID:", modelId)
+    // console.log("  📋 Model ID:", modelId)
 
     const response = await fgaClient.listObjects({
       authorization_model_id: modelId,
@@ -241,7 +298,7 @@ export async function listObjects(
       type: objectType,
     })
 
-    console.log("📡 FGA response:", response)
+    // console.log("📡 FGA response:", response)
 
     // Extract object IDs from the response
     // The response contains objects in format like "partner:uuid"
@@ -253,7 +310,7 @@ export async function listObjects(
       return parts.length > 1 ? parts[1] : obj
     })
 
-    console.log("🔗 Extracted object IDs:", extractedIds)
+    // console.log("🔗 Extracted object IDs:", extractedIds)
     return extractedIds
   } catch (error) {
     console.error("❌ FGA listObjects error:", error)

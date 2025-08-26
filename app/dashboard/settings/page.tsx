@@ -53,6 +53,8 @@ export default function SettingsPage() {
               <Image
                 src={user.picture}
                 alt="Profile"
+                width={48}
+                height={48}
                 className="h-12 w-12 rounded-full border-2 border-gray-600"
               />
             )}

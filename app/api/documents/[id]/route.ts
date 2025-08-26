@@ -3,11 +3,11 @@ import { prisma } from "@/lib/prisma"
 import { auth0 } from "@/lib/auth0"
 import { checkDocumentPermission, checkPartnerPermission } from "@/lib/fga"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth0.getSession()
     const user = session?.user
-    const documentId = params.id
+    const { id: documentId } = await params
 
     if (!user?.sub) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -42,11 +42,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth0.getSession()
     const user = session?.user
-    const documentId = params.id
+    const { id: documentId } = await params
 
     if (!user?.sub) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -95,11 +95,14 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await auth0.getSession()
     const user = session?.user
-    const documentId = params.id
+    const { id: documentId } = await params
 
     if (!user?.sub) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

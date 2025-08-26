@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth0 } from "@/lib/auth0"
-import { checkPlatformPermission } from "@/lib/fga"
+import { checkPermission } from "@/lib/fga"
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,12 +9,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    console.log("🔍 Checking permissions for user:", session.user.sub)
-    console.log("📧 User email:", session.user.email)
+    // console.log("🔍 Checking permissions for user:", session.user.sub)
+    // console.log("📧 User email:", session.user.email)
 
-    // Check if user has super admin permissions
-    const isSuperAdmin = await checkPlatformPermission(session.user.sub, "PLATFORM_SUPER_ADMIN")
-    console.log("🛡️ Super admin check result:", isSuperAdmin)
+    // Use proper FGA check for super admin
+    const isSuperAdmin = await checkPermission(
+      `user:${session.user.sub}`,
+      "super_admin",
+      "platform:default"
+    )
+
+    // console.log("🛡️ Super admin check result:", isSuperAdmin)
 
     const response = {
       isSuperAdmin,
@@ -22,7 +27,7 @@ export async function GET(request: NextRequest) {
       email: session.user.email,
     }
 
-    console.log("📤 Sending response:", response)
+    // console.log("📤 Sending response:", response)
     return NextResponse.json(response)
   } catch (error) {
     console.error("❌ Error checking permissions:", error)

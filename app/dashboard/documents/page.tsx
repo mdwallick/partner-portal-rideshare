@@ -30,12 +30,37 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [isManufacturingPartner, setIsManufacturingPartner] = useState(false)
+  const [checkingAccess, setCheckingAccess] = useState(true)
 
   useEffect(() => {
     if (user) {
-      fetchDocuments()
+      checkPartnerType()
     }
   }, [user])
+
+  const checkPartnerType = async () => {
+    try {
+      const response = await fetch("/api/partners/me")
+      if (response.ok) {
+        const data = await response.json()
+        if (data.partner?.type === "manufacturing") {
+          setIsManufacturingPartner(true)
+          fetchDocuments()
+        } else {
+          // Redirect non-manufacturing partners
+          window.location.href = "/dashboard"
+        }
+      } else {
+        window.location.href = "/dashboard"
+      }
+    } catch (error) {
+      console.error("Error checking partner type:", error)
+      window.location.href = "/dashboard"
+    } finally {
+      setCheckingAccess(false)
+    }
+  }
 
   const fetchDocuments = async () => {
     try {
@@ -81,12 +106,16 @@ export default function DocumentsPage() {
       (doc.description && doc.description.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
-  if (isLoading || loading) {
+  if (isLoading || checkingAccess) {
     return (
       <div className="flex items-center justify-center h-64 bg-gray-900">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
       </div>
     )
+  }
+
+  if (!isManufacturingPartner) {
+    return null // Will redirect
   }
 
   if (error) {

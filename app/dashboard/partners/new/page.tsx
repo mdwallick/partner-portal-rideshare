@@ -1,15 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
-import { Building2, Save, X, Upload, Globe, Shield, AlertTriangle, CheckCircle } from "lucide-react"
+import { Building2, Save, X, Globe, Shield, AlertTriangle, CheckCircle, Cog } from "lucide-react"
 import Link from "next/link"
 
 interface PartnerFormData {
   name: string
-  type: "technology" | "manufacturing"
+  type: "technology" | "manufacturing" | "fleet_maintenance"
   logo_url?: string
+}
+
+interface MetroArea {
+  id: string
+  name: string
+  airport_code: string
 }
 
 export default function NewPartnerPage() {
@@ -23,8 +29,55 @@ export default function NewPartnerPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [metroAreas, setMetroAreas] = useState<MetroArea[]>([])
+  const [assignedMetroAreas, setAssignedMetroAreas] = useState<string[]>([])
+  const [loadingMetroAreas, setLoadingMetroAreas] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      checkSuperAdminStatus()
+    }
+  }, [user])
+
+  const checkSuperAdminStatus = async () => {
+    try {
+      const response = await fetch("/api/test-permissions")
+      if (response.ok) {
+        const data = await response.json()
+        if (data.isSuperAdmin) {
+          setIsSuperAdmin(true)
+          await fetchMetroAreas()
+        }
+      }
+    } catch (error) {
+      console.error("Error checking super admin status:", error)
+    }
+  }
+
+  const fetchMetroAreas = async () => {
+    try {
+      console.log("🔍 Fetching metro areas...")
+      setLoadingMetroAreas(true)
+      const response = await fetch("/api/metro-areas")
+      console.log("📡 Metro areas response status:", response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("📋 Metro areas data received:", data)
+        setMetroAreas(data)
+      } else {
+        console.log("❌ Metro areas fetch failed with status:", response.status)
+        const errorText = await response.text()
+        console.log("❌ Error response:", errorText)
+      }
+    } catch (error) {
+      console.error("❌ Error fetching metro areas:", error)
+    } finally {
+      setLoadingMetroAreas(false)
+    }
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -35,21 +88,12 @@ export default function NewPartnerPage() {
   }
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setLogoFile(file)
-
-      // Create preview URL
-      const reader = new FileReader()
-      reader.onload = e => {
-        setLogoPreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
+    const url = e.target.value
+    setFormData(prev => ({ ...prev, logo_url: url }))
+    setLogoPreview(url)
   }
 
   const removeLogo = () => {
-    setLogoFile(null)
     setLogoPreview(null)
     setFormData(prev => ({ ...prev, logo_url: "" }))
   }
@@ -67,6 +111,17 @@ export default function NewPartnerPage() {
       setError("Partner type is required")
       return false
     }
+
+    // Validate logo URL if provided
+    if (formData.logo_url && formData.logo_url.trim()) {
+      try {
+        new URL(formData.logo_url.trim())
+      } catch {
+        setError("Please enter a valid logo URL")
+        return false
+      }
+    }
+
     return true
   }
 
@@ -79,17 +134,28 @@ export default function NewPartnerPage() {
       setLoading(true)
       setError(null)
 
-      // Create form data for file upload
-      const submitData = new FormData()
-      submitData.append("name", formData.name.trim())
-      submitData.append("type", formData.type)
-      if (logoFile) {
-        submitData.append("logo", logoFile)
+      // Create request body for JSON submission
+      const requestBody: any = {
+        name: formData.name.trim(),
+        type: formData.type,
+        logo_url: formData.logo_url || null,
+      }
+
+      // Add metro areas if super admin and partner type supports it
+      if (
+        isSuperAdmin &&
+        (formData.type === "technology" || formData.type === "fleet_maintenance")
+      ) {
+        requestBody.metroAreaIds = assignedMetroAreas.join(",")
+        console.log("🗺️ Including metro areas in submission:", requestBody.metroAreaIds)
       }
 
       const response = await fetch("/api/partners", {
         method: "POST",
-        body: submitData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
       })
 
       if (response.ok) {
@@ -206,21 +272,22 @@ export default function NewPartnerPage() {
               className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               required
             >
-              <option value="technology">Technology Partner</option>
+              <option value="technology">Platform Partner</option>
               <option value="manufacturing">Manufacturing Partner</option>
+              <option value="fleet_maintenance">Fleet Maintenance Partner</option>
             </select>
             <div className="mt-2 flex items-start space-x-3 p-3 bg-gray-800/50 rounded-lg">
               {formData.type === "technology" ? (
                 <>
                   <Globe className="h-5 w-5 text-blue-400 mt-0.5" />
                   <div className="text-sm">
-                    <p className="text-blue-400 font-medium">Technology Partner</p>
+                    <p className="text-blue-400 font-medium">Platform Partner</p>
                     <p className="text-gray-400">
                       Manages client applications (mobile apps, web apps, M2M integrations)
                     </p>
                   </div>
                 </>
-              ) : (
+              ) : formData.type === "manufacturing" ? (
                 <>
                   <Shield className="h-5 w-5 text-green-400 mt-0.5" />
                   <div className="text-sm">
@@ -230,24 +297,50 @@ export default function NewPartnerPage() {
                     </p>
                   </div>
                 </>
+              ) : (
+                <>
+                  <Cog className="h-5 w-5 text-purple-400 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="text-purple-400 font-medium">Fleet Maintenance Partner</p>
+                    <p className="text-gray-400">
+                      Performs mechanical maintenance and software updates on autonomous vehicles
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           </div>
 
-          {/* Logo Upload */}
+          {/* Logo URL */}
           <div>
-            <label htmlFor="logo" className="block text-sm font-medium text-gray-300 mb-2">
-              Partner Logo
+            <label htmlFor="logo_url" className="block text-sm font-medium text-gray-300 mb-2">
+              Partner Logo URL
             </label>
             <div className="space-y-4">
               {/* Logo Preview */}
               {logoPreview && (
                 <div className="flex items-center space-x-4">
-                  <img
-                    src={logoPreview}
-                    alt="Logo preview"
-                    className="w-20 h-20 rounded-lg object-cover bg-gray-700"
-                  />
+                  <div className="relative">
+                    <img
+                      src={logoPreview}
+                      alt="Logo preview"
+                      className="w-20 h-20 rounded-lg object-cover bg-gray-700"
+                      onError={e => {
+                        // Show error state for broken images
+                        e.currentTarget.style.display = "none"
+                        const errorDiv = e.currentTarget.nextElementSibling as HTMLElement
+                        if (errorDiv) {
+                          errorDiv.style.display = "block"
+                        }
+                      }}
+                    />
+                    <div
+                      className="hidden w-20 h-20 rounded-lg bg-gray-700 border-2 border-red-500 flex items-center justify-center"
+                      style={{ display: "none" }}
+                    >
+                      <span className="text-red-400 text-xs text-center">Invalid URL</span>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={removeLogo}
@@ -258,34 +351,86 @@ export default function NewPartnerPage() {
                 </div>
               )}
 
-              {/* File Input */}
-              <div className="flex items-center justify-center w-full">
-                <label
-                  htmlFor="logo"
-                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-colors"
-                >
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="w-8 h-8 mb-2 text-gray-400" />
-                    <p className="mb-2 text-sm text-gray-400">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                  </div>
-                  <input
-                    id="logo"
-                    name="logo"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoChange}
-                    className="hidden"
-                  />
-                </label>
+              {/* URL Input */}
+              <div className="flex items-center space-x-3">
+                <input
+                  id="logo_url"
+                  name="logo_url"
+                  type="url"
+                  placeholder="https://example.com/logo.png"
+                  value={formData.logo_url || ""}
+                  onChange={handleLogoChange}
+                  className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+                {formData.logo_url && (
+                  <button
+                    type="button"
+                    onClick={() => setLogoPreview(formData.logo_url || null)}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    Preview
+                  </button>
+                )}
               </div>
             </div>
             <p className="mt-1 text-sm text-gray-500">
-              Optional: Upload a logo to represent the partner organization
+              Optional: Enter the URL of a logo image to represent the partner organization
             </p>
           </div>
+
+          {/* Metro Areas Assignment */}
+          {isSuperAdmin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Metro Areas Access
+              </label>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-400">
+                  Select which metro areas this partner can access for rideshare operations. Changes
+                  will be saved when you create the partner.
+                </p>
+
+                {loadingMetroAreas ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500 mr-2"></div>
+                    <span className="text-gray-400">Loading metro areas...</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                    {metroAreas.map(metro => (
+                      <label key={metro.id} className="flex items-center space-x-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={assignedMetroAreas.includes(metro.id)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setAssignedMetroAreas(prev => [...prev, metro.id])
+                            } else {
+                              setAssignedMetroAreas(prev => prev.filter(id => id !== metro.id))
+                            }
+                          }}
+                          className="rounded border-gray-600 text-orange-600 focus:ring-orange-500 focus:ring-offset-gray-800"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-white">{metro.name}</span>
+                          <span className="text-xs text-gray-400 ml-2">({metro.airport_code})</span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-500">
+                    {assignedMetroAreas.length} metro area(s) selected
+                  </p>
+                  <p className="text-xs text-blue-400">
+                    Metro areas will be saved with partner creation
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Submit Button */}
           <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-700">
@@ -303,7 +448,10 @@ export default function NewPartnerPage() {
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Creating...
+                  {isSuperAdmin &&
+                  (formData.type === "technology" || formData.type === "fleet_maintenance")
+                    ? "Creating Partner & Metro Areas..."
+                    : "Creating..."}
                 </>
               ) : (
                 <>
@@ -324,7 +472,7 @@ export default function NewPartnerPage() {
             <div className="flex items-start space-x-3">
               <Globe className="h-5 w-5 text-blue-400 mt-0.5" />
               <div>
-                <h4 className="font-medium text-blue-400">Technology Partners</h4>
+                <h4 className="font-medium text-blue-400">Platform Partners</h4>
                 <p className="text-sm text-gray-400">
                   Develop and manage client applications. They can register mobile apps, web
                   applications, and M2M integrations. Access to client management tools and API
@@ -339,6 +487,17 @@ export default function NewPartnerPage() {
                 <p className="text-sm text-gray-400">
                   Create and manage manufacturing documents, specifications, and technical
                   documentation. Access to document management tools and version control.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <Cog className="h-5 w-5 text-purple-400 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-purple-400">Fleet Maintenance Partners</h4>
+                <p className="text-sm text-gray-400">
+                  Perform mechanical maintenance and software updates on autonomous vehicles. Access
+                  to maintenance task management, software update tools, and vehicle health
+                  monitoring.
                 </p>
               </div>
             </div>

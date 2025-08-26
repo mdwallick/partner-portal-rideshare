@@ -4,11 +4,11 @@ import { auth0 } from "@/lib/auth0"
 import { checkPartnerPermission, checkPlatformPermission } from "@/lib/fga"
 import { PartnerType } from "@prisma/client"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth0.getSession()
     const user = session?.user
-    const partnerId = params.id
+    const { id: partnerId } = await params
 
     if (!user?.sub) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -17,6 +17,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     // Get the partner
     const partner = await prisma.partner.findUnique({
       where: { id: partnerId },
+      include: {
+        metroAreas: {
+          include: {
+            metro_area: true,
+          },
+        },
+      },
     })
 
     if (!partner) {
@@ -29,48 +36,49 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    return NextResponse.json(partner)
+    // Transform the response to include metro areas in a cleaner format
+    const partnerWithMetroAreas = {
+      ...partner,
+      metroAreas: partner.metroAreas.map(pma => pma.metro_area),
+    }
+
+    return NextResponse.json(partnerWithMetroAreas)
   } catch (error) {
     console.error("Error fetching partner:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth0.getSession()
     const user = session?.user
-    const partnerId = params.id
+    const { id: partnerId } = await params
 
     if (!user?.sub) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Parse FormData for file uploads
-    const formData = await request.formData()
-    const name = formData.get("name") as string
-    const typeString = formData.get("type") as string
-    const logoFile = formData.get("logo") as File | null
+    // Parse JSON body
+    const body = await request.json()
+    const name = body.name as string
+    const typeString = body.type as string
+    const logo_url = body.logo_url as string | null
+    const metroAreaIds = body.metroAreaIds as string | null
 
     // Validate partner type
-    if (typeString && !["technology", "manufacturing"].includes(typeString)) {
+    if (typeString && !["technology", "manufacturing", "fleet_maintenance"].includes(typeString)) {
       return NextResponse.json(
-        { error: "Invalid partner type. Must be 'technology' or 'manufacturing'" },
+        {
+          error:
+            "Invalid partner type. Must be 'technology', 'manufacturing', or 'fleet_maintenance'",
+        },
         { status: 400 }
       )
     }
 
     // Convert string to PartnerType enum (only if type is provided)
     const type = typeString ? (typeString as PartnerType) : undefined
-
-    // Handle logo file upload (for now, just store the filename)
-    let logo_url: string | null = null
-    if (logoFile) {
-      // For now, just use the filename as a placeholder
-      // In production, you'd upload to S3, Cloudinary, etc.
-      logo_url = `uploads/${logoFile.name}`
-      console.log("📁 Logo file received:", logoFile.name, "Size:", logoFile.size)
-    }
 
     // Get the partner
     const partner = await prisma.partner.findUnique({
@@ -98,6 +106,47 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         logo_url: logo_url !== undefined ? logo_url : partner.logo_url,
       },
     })
+
+    // Handle metro area assignment if provided and user is super admin
+    if (metroAreaIds && isSuperAdmin) {
+      try {
+        console.log("🗺️ Processing metro area assignment:", metroAreaIds)
+
+        // Parse metro area IDs (they come as a comma-separated string from FormData)
+        const metroAreaIdArray = metroAreaIds.split(",").filter(id => id.trim())
+
+        if (metroAreaIdArray.length > 0) {
+          // First, remove all existing metro area assignments
+          await prisma.partnerMetroArea.deleteMany({
+            where: { partner_id: partnerId },
+          })
+
+          // Then create new assignments
+          const metroAreaAssignments = metroAreaIdArray.map(metroAreaId => ({
+            partner_id: partnerId,
+            metro_area_id: metroAreaId.trim(),
+          }))
+
+          await prisma.partnerMetroArea.createMany({
+            data: metroAreaAssignments,
+          })
+
+          console.log(
+            `✅ Updated metro area assignments for partner ${partnerId}:`,
+            metroAreaIdArray
+          )
+        } else {
+          // If no metro areas selected, remove all assignments
+          await prisma.partnerMetroArea.deleteMany({
+            where: { partner_id: partnerId },
+          })
+          console.log(`✅ Removed all metro area assignments for partner ${partnerId}`)
+        }
+      } catch (metroError) {
+        console.error("❌ Error updating metro area assignments:", metroError)
+        // Don't fail the entire update if metro area assignment fails
+      }
+    }
 
     console.log(`🗄️ Updated partner ${partnerId}`)
     return NextResponse.json(updatedPartner)

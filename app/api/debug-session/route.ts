@@ -1,56 +1,46 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { auth0 } from "@/lib/auth0"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Get the access token from Auth0
-    const session = await auth0.getSession()
-    const accessToken = session?.tokenSet.accessToken
-    const idToken = session?.tokenSet.idToken
-    const refreshToken = session?.tokenSet.refreshToken
+    // console.log("🔍 Debug session endpoint called")
 
-    if (!accessToken) {
+    const session = await auth0.getSession()
+    // console.log("📋 Session data:", {
+    //   hasSession: !!session,
+    //   hasUser: !!session?.user,
+    //   userId: session?.user?.sub,
+    //   email: session?.user?.email,
+    //   name: session?.user?.name,
+    //   headers: Object.fromEntries(request.headers.entries()),
+    // })
+
+    if (!session?.user) {
       return NextResponse.json(
         {
-          error: "No access token found",
-          message: "You need to be logged in to see session data",
+          error: "No session or user found",
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          headers: Object.fromEntries(request.headers.entries()),
         },
         { status: 401 }
       )
     }
 
-    // Get user info from Auth0
-    const userInfo = {
-      email: session.user.email,
-      name: session.user.name,
-      picture: session.user.picture,
-      sub: session.user.sub,
-      updated_at: session.user.updated_at,
-      created_at: session.user.created_at,
-      email_verified: session.user.email_verified,
-    }
-
-    // Return the session data
     return NextResponse.json({
       success: true,
-      session: {
-        user: userInfo,
-        accessToken: accessToken,
-        idToken: idToken,
-        refreshToken: refreshToken,
-      },
-      tokens: {
-        accessToken: accessToken,
-        idToken: idToken,
-        refreshToken: refreshToken,
-      },
+      userId: session.user.sub,
+      email: session.user.email,
+      name: session.user.name,
+      sessionKeys: Object.keys(session),
+      userKeys: Object.keys(session.user),
     })
   } catch (error) {
-    console.error("Error getting session:", error)
+    console.error("❌ Error in debug session:", error)
     return NextResponse.json(
       {
-        error: "Failed to get session",
-        details: error instanceof Error ? error.message : "Unknown error",
+        error: "Session check failed",
+        errorMessage: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     )

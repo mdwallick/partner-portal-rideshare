@@ -4,9 +4,9 @@ import { useUser } from "@auth0/nextjs-auth0"
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Edit, Trash2, Users, FileMusic, ShoppingBag, Eye, Trash } from "lucide-react"
+import { ArrowLeft, Edit, Trash2, Users, Eye } from "lucide-react"
 import Image from "next/image"
-import { Partner, Song, SKU, User } from "@/lib/types"
+import { Partner, User } from "@/lib/types"
 
 export default function PartnerDetailPage() {
   const { user, isLoading } = useUser()
@@ -15,35 +15,47 @@ export default function PartnerDetailPage() {
   const partnerId = params.id as string
 
   const [partner, setPartner] = useState<Partner | null>(null)
-  const [songs, setSongs] = useState<Song[]>([])
-  const [skus, setSkus] = useState<SKU[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   useEffect(() => {
     if (!isLoading && user && partnerId) {
-      const fetchUsersData = async () => {
+      const checkSuperAdminStatus = async () => {
         try {
-          const usersResponse = await fetch(`/api/partners/${partnerId}/users`)
-          if (usersResponse.ok) {
-            const usersData = await usersResponse.json()
-            setUsers(usersData.teamMembers || usersData) // Handle both new and old format
+          const response = await fetch("/api/test-permissions")
+          if (response.ok) {
+            const data = await response.json()
+            setIsSuperAdmin(data.isSuperAdmin)
           }
         } catch (error) {
-          console.error("Error fetching users:", error)
+          console.error("Error checking super admin status:", error)
         }
       }
 
-      const fetchSKUsData = async () => {
+      const fetchUsersData = async () => {
         try {
-          const skusResponse = await fetch(`/api/partners/${partnerId}/skus`)
-          if (skusResponse.ok) {
-            const skusData = await skusResponse.json()
-            setSkus(skusData)
+          const usersResponse = await fetch(`/api/users?partnerId=${partnerId}`)
+          if (usersResponse.ok) {
+            const usersData = await usersResponse.json()
+            // Transform the unified endpoint response to match frontend expectations
+            const transformedUsers = (usersData.users || []).map(user => {
+              // Find the partner-specific data for this partner
+              const partnerData = user.partners.find(p => p.id === partnerId)
+              return {
+                id: user.id,
+                email: user.email,
+                display_name: user.name,
+                role: partnerData?.role || "unknown",
+                created_at: partnerData?.joined_at || user.created_at,
+                auth0_user_id: user.auth0_user_id,
+              }
+            })
+            setUsers(transformedUsers)
           }
         } catch (error) {
-          console.error("Error fetching SKUs:", error)
+          console.error("Error fetching users:", error)
         }
       }
 
@@ -56,13 +68,6 @@ export default function PartnerDetailPage() {
           if (partnerResponse.ok) {
             const partnerData = await partnerResponse.json()
             setPartner(partnerData)
-
-            // Fetch related data based on partner type
-            if (partnerData.type === "artist") {
-              await fetchSongsData()
-            } else if (partnerData.type === "merch_supplier") {
-              await fetchSKUsData()
-            }
 
             // Always fetch team members
             await fetchUsersData()
@@ -77,18 +82,8 @@ export default function PartnerDetailPage() {
         }
       }
 
-      const fetchSongsData = async () => {
-        try {
-          const songsResponse = await fetch(`/api/partners/${partnerId}/songs`)
-          if (songsResponse.ok) {
-            const songsData = await songsResponse.json()
-            setSongs(songsData)
-          }
-        } catch (error) {
-          console.error("Error fetching games:", error)
-        }
-      }
-
+      // Check super admin status and fetch data
+      checkSuperAdminStatus()
       fetchPartnerData()
     }
   }, [user, isLoading, partnerId])
@@ -117,11 +112,29 @@ export default function PartnerDetailPage() {
   }
 
   const getPartnerTypeLabel = (type: string) => {
-    return type === "artist" ? "Artist" : "Merchandise Supplier"
+    switch (type) {
+      case "technology":
+        return "Platform Partner"
+      case "manufacturing":
+        return "Manufacturing Partner"
+      case "fleet_maintenance":
+        return "Fleet Maintenance Partner"
+      default:
+        return type.charAt(0).toUpperCase() + type.slice(1)
+    }
   }
 
   const getPartnerTypeIcon = (type: string) => {
-    return type === "artist" ? "🎤" : "🛍️"
+    switch (type) {
+      case "technology":
+        return "🌐"
+      case "manufacturing":
+        return "🏭"
+      case "fleet_maintenance":
+        return "🔧"
+      default:
+        return "🏢"
+    }
   }
 
   const getRoleBadge = (role: string) => {
@@ -239,7 +252,7 @@ export default function PartnerDetailPage() {
               </div>
             </div>
 
-            {partner.userCanAdmin && (
+            {(partner.userCanAdmin || isSuperAdmin) && (
               <div className="flex items-center space-x-3">
                 <Link
                   href={`/dashboard/partners/${partnerId}/edit`}
@@ -248,13 +261,15 @@ export default function PartnerDetailPage() {
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Partner
                 </Link>
-                <button
-                  onClick={handleDeletePartner}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Partner
-                </button>
+                {isSuperAdmin && (
+                  <button
+                    onClick={handleDeletePartner}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Partner
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -267,16 +282,34 @@ export default function PartnerDetailPage() {
               <div className="flex-shrink-0">
                 <div className="h-8 w-8 bg-blue-900 rounded-lg flex items-center justify-center">
                   <span className="text-blue-400 text-lg">
-                    {partner.type === "artist" ? "🎸" : "🛍️"}
+                    {partner.type === "technology"
+                      ? "🌐"
+                      : partner.type === "manufacturing"
+                        ? "🏭"
+                        : partner.type === "fleet_maintenance"
+                          ? "🔧"
+                          : "🏢"}
                   </span>
                 </div>
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-400">
-                  {partner.type === "artist" ? "Songs" : "Products"}
+                  {partner.type === "technology"
+                    ? "Clients"
+                    : partner.type === "manufacturing"
+                      ? "Documents"
+                      : partner.type === "fleet_maintenance"
+                        ? "Maintenance Tasks"
+                        : "Items"}
                 </p>
                 <p className="text-2xl font-bold text-white">
-                  {partner.type === "artist" ? songs.length : skus.length}
+                  {partner.type === "technology"
+                    ? "0"
+                    : partner.type === "manufacturing"
+                      ? "0"
+                      : partner.type === "fleet_maintenance"
+                        ? "0"
+                        : "0"}
                 </p>
               </div>
             </div>
@@ -286,16 +319,13 @@ export default function PartnerDetailPage() {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="h-8 w-8 bg-green-900 rounded-lg flex items-center justify-center">
-                  <span className="text-green-400 text-lg">📊</span>
+                  <span className="text-green-400 text-lg">🗺️</span>
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Active</p>
+                <p className="text-sm font-medium text-gray-400">Metro Areas</p>
                 <p className="text-2xl font-bold text-white">
-                  {/* TODO: Add songs count */}
-                  {partner.type === "artist"
-                    ? songs.filter(g => g.id.length > 0).length
-                    : skus.filter(s => s.status === "active").length}
+                  {partner.metroAreas ? partner.metroAreas.length : 0}
                 </p>
               </div>
             </div>
@@ -316,156 +346,190 @@ export default function PartnerDetailPage() {
           </div>
         </div>
 
-        {/* Content based on partner type */}
-        {partner.type === "artist" ? (
-          <div className="space-y-8">
-            {/* Songs Section */}
-            <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-white">Songs</h2>
+        {/* Metro Areas Section */}
+        {(partner.type === "technology" || partner.type === "fleet_maintenance") && (
+          <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white flex items-center">
+                <span className="mr-2">🗺️</span>
+                Metro Areas
+              </h2>
+              {partner.userCanAdmin && (
+                <Link
+                  href={`/dashboard/partners/${partnerId}/edit`}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <Edit className="h-4 w-4 mr-1.5" />
+                  Edit
+                </Link>
+              )}
+            </div>
+
+            {partner.metroAreas && partner.metroAreas.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {partner.metroAreas.map((metro: any) => (
+                  <div
+                    key={metro.id}
+                    className="border border-gray-600 rounded-lg p-3 bg-gray-700 hover:border-blue-500 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-shrink-0">
+                        <div className="h-8 w-8 bg-blue-900 rounded-lg flex items-center justify-center">
+                          <span className="text-blue-400 text-sm font-medium">
+                            {metro.airport_code}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-white truncate">{metro.name}</h3>
+                        <p className="text-xs text-gray-400">Airport: {metro.airport_code}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-gray-400 mb-2">
+                  <span className="text-4xl">🗺️</span>
+                </div>
+                <p className="text-gray-400 mb-4">No metro areas assigned</p>
                 {partner.userCanAdmin && (
                   <Link
-                    href={`/dashboard/partners/${partnerId}/songs/new`}
+                    href={`/dashboard/partners/${partnerId}/edit`}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Assign Metro Areas
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Content based on partner type */}
+        {partner.type === "technology" ? (
+          <div className="space-y-8">
+            {/* Clients Section */}
+            <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-white">Clients</h2>
+                {partner.userCanAdmin && (
+                  <Link
+                    href="/dashboard/clients"
                     className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
                   >
-                    <FileMusic className="h-4 w-4 mr-2" />
-                    Add Song
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Clients
                   </Link>
                 )}
               </div>
 
-              {songs.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {songs.map(song => (
-                    <div
-                      key={song.id}
-                      className="border border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow hover:border-orange-500 bg-gray-700"
-                    >
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          {song.picture_url ? (
-                            <Image
-                              src={song.picture_url}
-                              alt={song.name}
-                              className="h-12 w-12 rounded-lg object-cover"
-                            />
-                          ) : (
-                            <div className="h-12 w-12 bg-gray-600 rounded-lg flex items-center justify-center">
-                              <span className="text-gray-400 text-lg">🎵</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <Link
-                            href={`/dashboard/partners/${partnerId}/songs/${song.id}`}
-                            className="block"
-                          >
-                            <h3 className="font-medium text-white truncate">{song.name}</h3>
-                          </Link>
-                          <p className="text-sm text-gray-400">
-                            {song.genre || "Unknown genre"}
-                            {typeof (song as any).duration_s === "number" && (
-                              <>
-                                {" • "}
-                                {Math.floor(((song as any).duration_s || 0) / 60)}:
-                                {String(((song as any).duration_s || 0) % 60).padStart(2, "0")}
-                              </>
-                            )}
-                          </p>
-                        </div>
-                        {partner.userCanAdmin && (
-                          <button
-                            onClick={async () => {
-                              if (!confirm(`Delete song "${song.name}"?`)) return
-                              try {
-                                const resp = await fetch(
-                                  `/api/partners/${partnerId}/songs/${song.id}`,
-                                  {
-                                    method: "DELETE",
-                                  }
-                                )
-                                if (resp.ok) {
-                                  setSongs(prev => prev.filter(s => s.id !== song.id))
-                                }
-                              } catch (e) {
-                                console.error("Failed to delete song", e)
-                              }
-                            }}
-                            className="p-2 text-gray-400 hover:text-red-500"
-                            title="Delete song"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+              <div className="text-center py-8">
+                <div className="text-gray-400 mb-2">
+                  <span className="text-4xl">🌐</span>
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <FileMusic className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-400">No songs created yet.</p>
+                <p className="text-gray-400 mb-4">
+                  Client management is available in the Clients section
+                </p>
+                {partner.userCanAdmin && (
+                  <Link
+                    href="/dashboard/clients"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Go to Clients
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : partner.type === "manufacturing" ? (
+          <div className="space-y-8">
+            {/* Documents Section */}
+            <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-white">Documents</h2>
+                {partner.userCanAdmin && (
+                  <Link
+                    href="/dashboard/documents"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Documents
+                  </Link>
+                )}
+              </div>
+
+              <div className="text-center py-8">
+                <div className="text-gray-400 mb-2">
+                  <span className="text-4xl">📄</span>
                 </div>
-              )}
+                <p className="text-gray-400 mb-4">
+                  Document management is available in the Documents section
+                </p>
+                {partner.userCanAdmin && (
+                  <Link
+                    href="/dashboard/documents"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Go to Documents
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : partner.type === "fleet_maintenance" ? (
+          <div className="space-y-8">
+            {/* Fleet Maintenance Section */}
+            <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-white">Fleet Maintenance</h2>
+                {partner.userCanAdmin && (
+                  <Link
+                    href="/dashboard/fleet-maintenance"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Fleet Maintenance
+                  </Link>
+                )}
+              </div>
+
+              <div className="text-center py-8">
+                <div className="text-gray-400 mb-2">
+                  <span className="text-4xl">🔧</span>
+                </div>
+                <p className="text-gray-400 mb-4">
+                  Fleet maintenance tools are available in the Fleet Maintenance section
+                </p>
+                {partner.userCanAdmin && (
+                  <Link
+                    href="/dashboard/fleet-maintenance"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Go to Fleet Maintenance
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         ) : (
           <div className="space-y-8">
-            {/* SKUs Section */}
+            {/* Default Section for other partner types */}
             <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-white">Products</h2>
-                {partner.userCanAdmin && (
-                  <Link
-                    href={`/dashboard/partners/${partnerId}/skus/new`}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                  >
-                    <ShoppingBag className="h-4 w-4 mr-2" />
-                    Add Product
-                  </Link>
-                )}
+              <div className="text-center py-8">
+                <div className="text-gray-400 mb-2">
+                  <span className="text-4xl">🏢</span>
+                </div>
+                <p className="text-gray-400 mb-4">Partner type: {partner.type}</p>
+                <p className="text-gray-400">
+                  No specific content available for this partner type.
+                </p>
               </div>
-
-              {skus.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {skus.map(sku => (
-                    <Link
-                      key={sku.id}
-                      href={`/dashboard/partners/${partnerId}/skus/${sku.id}`}
-                      className="border border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow hover:border-green-500 cursor-pointer bg-gray-700"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
-                          {sku.image_url ? (
-                            <Image
-                              src={sku.image_url}
-                              alt={sku.name}
-                              width={48}
-                              height={48}
-                              className="h-12 w-12 rounded-lg object-cover"
-                            />
-                          ) : (
-                            <div className="h-12 w-12 bg-gray-600 rounded-lg flex items-center justify-center">
-                              <span className="text-gray-400 text-lg">🛍️</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-white truncate">{sku.name}</h3>
-                          <p className="text-sm text-gray-400">
-                            {sku.category || "No category"} • {sku.status}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <ShoppingBag className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-400">No products created yet.</p>
-                </div>
-              )}
             </div>
           </div>
         )}

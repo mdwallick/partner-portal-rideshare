@@ -26,6 +26,12 @@ type document
     define can_view: [user] or can_view from parent
     define parent: [partner]
 
+type metro_area
+  relations
+    define can_admin: [user] or can_admin from parent
+    define can_view: [user] or can_view from parent
+    define parent: [partner]
+
 type platform
   relations
     define can_manage_all: [user] or super_admin
@@ -49,6 +55,10 @@ export const FGA_RELATIONS = {
   DOCUMENT_CAN_ADMIN: "can_admin",
   DOCUMENT_CAN_VIEW: "can_view",
 
+  // Metro area relations
+  METRO_AREA_CAN_ADMIN: "can_admin",
+  METRO_AREA_CAN_VIEW: "can_view",
+
   // Platform relations
   PLATFORM_CAN_MANAGE_ALL: "can_manage_all",
   PLATFORM_CAN_VIEW_ALL: "can_view_all",
@@ -61,6 +71,7 @@ export const FGA_TYPES = {
   PARTNER: "partner",
   CLIENT: "client",
   DOCUMENT: "document",
+  METRO_AREA: "metro_area",
   PLATFORM: "platform",
 } as const
 
@@ -87,6 +98,11 @@ export function createFgaClient(clientId: string): string {
 // Helper function to create FGA document identifier
 export function createFgaDocument(documentId: string): string {
   return `document:${documentId}`
+}
+
+// Helper function to create FGA metro area identifier
+export function createFgaMetroArea(metroAreaId: string): string {
+  return `metro_area:${metroAreaId}`
 }
 
 // Helper function to create FGA platform identifier

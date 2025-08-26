@@ -26,15 +26,15 @@ export async function GET(request: NextRequest) {
 
     let allowedPartnerIds: string[] = []
 
-    console.log("🔍 Checking permissions for user:", user.sub)
+    // console.log("🔍 Checking permissions for user:", user.sub)
 
     if (isSuperAdmin) {
-      console.log("✅ User is super admin - can see all users")
+      // console.log("✅ User is super admin - can see all users")
       // Super admin can see all users
       allowedPartnerIds = []
     } else {
-      console.log("👥 User is partner user - checking partner access")
-      console.log("🔍 User ID being checked:", `user:${user.sub}`)
+      // console.log("👥 User is partner user - checking partner access")
+      // console.log("🔍 User ID being checked:", `user:${user.sub}`)
 
       // Partner user can only see users in their partner organizations
       const userPartners = await listObjects(`user:${user.sub}`, "can_admin", "partner")
@@ -45,17 +45,17 @@ export async function GET(request: NextRequest) {
       )
       const userViewPartners = await listObjects(`user:${user.sub}`, "can_view", "partner")
 
-      console.log("🏢 Partner access results:")
-      console.log("  - can_admin:", userPartners)
-      console.log("  - can_manage_members:", userManagePartners)
-      console.log("  - can_view:", userViewPartners)
+      // console.log("🏢 Partner access results:")
+      // console.log("  - can_admin:", userPartners)
+      // console.log("  - can_manage_members:", userManagePartners)
+      // console.log("  - can_view:", userViewPartners)
 
       // Combine all partner IDs the user has access to
       allowedPartnerIds = Array.from(
         new Set([...userPartners, ...userManagePartners, ...userViewPartners])
       )
 
-      console.log("🔗 Combined allowed partner IDs:", allowedPartnerIds)
+      // console.log("🔗 Combined allowed partner IDs:", allowedPartnerIds)
 
       if (allowedPartnerIds.length === 0) {
         console.log(
@@ -78,9 +78,9 @@ export async function GET(request: NextRequest) {
           // User has partner relationships, use those partner IDs
           const dbPartnerIds = userRecord.partnerUsers.map(pu => pu.partner_id)
           allowedPartnerIds = dbPartnerIds
-          console.log("✅ Found partner IDs from database:", allowedPartnerIds)
+          // console.log("✅ Found partner IDs from database:", allowedPartnerIds)
         } else {
-          console.log("❌ No partner access found - returning 403")
+          // console.log("❌ No partner access found - returning 403")
           return NextResponse.json({ error: "No partner access found" }, { status: 403 })
         }
       }
@@ -89,9 +89,9 @@ export async function GET(request: NextRequest) {
     // If no specific partnerId is requested, default to user's accessible partners
     let effectivePartnerId = partnerId
     if (!effectivePartnerId && !isSuperAdmin) {
-      console.log("🎯 No specific partner requested, defaulting to user's accessible partners")
+      // console.log("🎯 No specific partner requested, defaulting to user's accessible partners")
       effectivePartnerId = allowedPartnerIds[0] // Use first accessible partner as default
-      console.log("📍 Defaulting to partner:", effectivePartnerId)
+      // console.log("📍 Defaulting to partner:", effectivePartnerId)
     }
 
     // Build where clause for filtering
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log("🔍 Database query where clause:", JSON.stringify(where, null, 2))
+    // console.log("🔍 Database query where clause:", JSON.stringify(where, null, 2))
 
     // Fetch users with pagination and filtering
     const [users, total] = await Promise.all([
@@ -161,9 +161,9 @@ export async function GET(request: NextRequest) {
       prisma.user.count({ where }),
     ])
 
-    console.log("📊 Database query results:")
-    console.log("  - Users found:", users.length)
-    console.log("  - Total count:", total)
+    // console.log("📊 Database query results:")
+    // console.log("  - Users found:", users.length)
+    // console.log("  - Total count:", total)
 
     // Transform the data for the response
     const transformedUsers = users.map(user => ({
@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
       })),
     }))
 
-    console.log("✅ Returning response with", transformedUsers.length, "users")
+    // console.log("✅ Returning response with", transformedUsers.length, "users")
 
     return NextResponse.json({
       users: transformedUsers,
@@ -290,11 +290,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Add user to Auth0 organization
-    console.log(
-      "in users/route.ts: Adding user to organization:",
-      partner.organization_id,
-      auth0User.id
-    )
+    // console.log(
+    //   "in users/route.ts: Adding user to organization:",
+    //   partner.organization_id,
+    //   auth0User.id
+    // )
     await auth0ManagementAPI.addUserToOrganization(partner.organization_id, auth0User.id)
 
     // Create user in local database
@@ -319,7 +319,26 @@ export async function POST(request: NextRequest) {
 
     // Create FGA tuple linking user to partner
     const { writeTuple } = await import("@/lib/fga")
-    await writeTuple(`user:${dbUser.auth0_user_id}`, role, `partner:${partnerId}`)
+    console.log("🔐 Creating FGA tuple:", {
+      user: `user:${dbUser.auth0_user_id}`,
+      relation: role,
+      object: `partner:${partnerId}`,
+      auth0UserId: dbUser.auth0_user_id,
+      role: role,
+      partnerId: partnerId,
+    })
+
+    const tupleCreated = await writeTuple(
+      `user:${dbUser.auth0_user_id}`,
+      role,
+      `partner:${partnerId}`
+    )
+    if (!tupleCreated) {
+      console.error("❌ Failed to create FGA tuple for user:", dbUser.auth0_user_id)
+      // Continue with user creation even if FGA fails
+    } else {
+      console.log("✅ FGA tuple created successfully for user:", dbUser.auth0_user_id)
+    }
 
     return NextResponse.json(
       {

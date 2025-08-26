@@ -7,7 +7,6 @@ import {
   Smartphone,
   Save,
   X,
-  Upload,
   Globe,
   Monitor,
   Server,
@@ -47,8 +46,7 @@ export default function EditClientPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [pictureFile, setPictureFile] = useState<File | null>(null)
-  const [picturePreview, setPicturePreview] = useState<string | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
 
   useEffect(() => {
     if (clientId) {
@@ -68,7 +66,7 @@ export default function EditClientPage() {
           picture_url: clientData.picture_url || "",
         })
         if (clientData.picture_url) {
-          setPicturePreview(clientData.picture_url)
+          setLogoPreview(clientData.picture_url)
         }
       } else {
         setError("Failed to fetch client information")
@@ -89,23 +87,18 @@ export default function EditClientPage() {
     }))
   }
 
-  const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setPictureFile(file)
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target
+    setFormData(prev => ({ ...prev, picture_url: value }))
 
-      // Create preview URL
-      const reader = new FileReader()
-      reader.onload = e => {
-        setPicturePreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
+    // Clear preview if URL is empty
+    if (!value.trim()) {
+      setLogoPreview(null)
     }
   }
 
-  const removePicture = () => {
-    setPictureFile(null)
-    setPicturePreview(null)
+  const removeLogo = () => {
+    setLogoPreview(null)
     setFormData(prev => ({ ...prev, picture_url: "" }))
   }
 
@@ -134,17 +127,19 @@ export default function EditClientPage() {
       setSaving(true)
       setError(null)
 
-      // Create form data for file upload
-      const submitData = new FormData()
-      submitData.append("name", formData.name.trim())
-      submitData.append("type", formData.type)
-      if (pictureFile) {
-        submitData.append("picture", pictureFile)
+      // Create JSON payload for URL submission
+      const submitData = {
+        name: formData.name.trim(),
+        type: formData.type,
+        picture_url: formData.picture_url || null,
       }
 
       const response = await fetch(`/api/clients/${clientId}`, {
         method: "PUT",
-        body: submitData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(submitData),
       })
 
       if (response.ok) {
@@ -383,57 +378,68 @@ export default function EditClientPage() {
             </div>
           </div>
 
-          {/* Picture Upload */}
+          {/* Logo URL */}
           <div>
-            <label htmlFor="picture" className="block text-sm font-medium text-gray-300 mb-2">
-              Client Picture/Icon
+            <label htmlFor="picture_url" className="block text-sm font-medium text-gray-300 mb-2">
+              Client Logo URL
             </label>
             <div className="space-y-4">
-              {/* Picture Preview */}
-              {picturePreview && (
+              {/* Logo Preview */}
+              {logoPreview && (
                 <div className="flex items-center space-x-4">
                   <img
-                    src={picturePreview}
-                    alt="Picture preview"
+                    src={logoPreview}
+                    alt="Logo preview"
                     className="w-20 h-20 rounded-lg object-cover bg-gray-700"
+                    onError={e => {
+                      // Show error state for broken images
+                      e.currentTarget.style.display = "none"
+                      const errorDiv = e.currentTarget.nextElementSibling as HTMLElement
+                      if (errorDiv) {
+                        errorDiv.style.display = "block"
+                      }
+                    }}
                   />
+                  <div
+                    className="hidden w-20 h-20 rounded-lg bg-gray-700 border-2 border-red-500 flex items-center justify-center"
+                    style={{ display: "none" }}
+                  >
+                    <span className="text-red-400 text-xs text-center">Invalid URL</span>
+                  </div>
                   <button
                     type="button"
-                    onClick={removePicture}
+                    onClick={removeLogo}
                     className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
                   >
-                    Remove Picture
+                    Remove Logo
                   </button>
                 </div>
               )}
 
-              {/* File Input */}
-              <div className="flex items-center justify-center w-full">
-                <label
-                  htmlFor="picture"
-                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-colors"
-                >
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="w-8 h-8 mb-2 text-gray-400" />
-                    <p className="mb-2 text-sm text-gray-400">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                  </div>
-                  <input
-                    id="picture"
-                    name="picture"
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePictureChange}
-                    className="hidden"
-                  />
-                </label>
+              {/* URL Input */}
+              <div className="flex items-center space-x-3">
+                <input
+                  id="picture_url"
+                  name="picture_url"
+                  type="url"
+                  placeholder="https://example.com/logo.png"
+                  value={formData.picture_url || ""}
+                  onChange={handleLogoChange}
+                  className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+                {formData.picture_url && (
+                  <button
+                    type="button"
+                    onClick={() => setLogoPreview(formData.picture_url || null)}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    Preview
+                  </button>
+                )}
               </div>
             </div>
             <p className="mt-1 text-sm text-gray-500">
-              Upload a new picture to replace the current one, or leave empty to keep the existing
-              picture
+              Enter the URL of the logo image. The image will be displayed as a preview above.
             </p>
           </div>
 

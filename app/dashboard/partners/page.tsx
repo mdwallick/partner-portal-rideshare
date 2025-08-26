@@ -14,13 +14,14 @@ import {
   Globe,
   Shield,
   MoreVertical,
+  Cog,
 } from "lucide-react"
 import Link from "next/link"
 
 interface Partner {
   id: string
   name: string
-  type: "technology" | "manufacturing"
+  type: "technology" | "manufacturing" | "fleet_maintenance"
   logo_url?: string
   created_at: string
   status: string
@@ -90,6 +91,8 @@ export default function PartnersPage() {
         return <Globe className="h-4 w-4" />
       case "manufacturing":
         return <Shield className="h-4 w-4" />
+      case "fleet_maintenance":
+        return <Cog className="h-4 w-4" />
       default:
         return <Building2 className="h-4 w-4" />
     }
@@ -101,6 +104,8 @@ export default function PartnersPage() {
         return "bg-blue-100 text-blue-800"
       case "manufacturing":
         return "bg-green-100 text-green-800"
+      case "fleet_maintenance":
+        return "bg-purple-100 text-purple-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
@@ -153,72 +158,6 @@ export default function PartnersPage() {
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gray-800 rounded-lg p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-600 rounded-lg">
-              <Building2 className="h-6 w-6 text-white" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-400">Total Partners</p>
-              <p className="text-2xl font-bold text-white">{partners.length}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-600 rounded-lg">
-              <Globe className="h-6 w-6 text-white" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-400">Technology</p>
-              <p className="text-2xl font-bold text-white">
-                {partners.filter(p => p.type === "technology").length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-600 rounded-lg">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-400">Manufacturing</p>
-              <p className="text-2xl font-bold text-white">
-                {partners.filter(p => p.type === "manufacturing").length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-orange-600 rounded-lg">
-              <Calendar className="h-6 w-6 text-white" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-400">This Month</p>
-              <p className="text-2xl font-bold text-white">
-                {
-                  partners.filter(p => {
-                    const partnerDate = new Date(p.created_at)
-                    const now = new Date()
-                    return (
-                      partnerDate.getMonth() === now.getMonth() &&
-                      partnerDate.getFullYear() === now.getFullYear()
-                    )
-                  }).length
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Search and Filters */}
       <div className="bg-gray-800 rounded-lg p-6 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
@@ -245,6 +184,7 @@ export default function PartnersPage() {
               <option value="all">All Types</option>
               <option value="technology">Technology</option>
               <option value="manufacturing">Manufacturing</option>
+              <option value="fleet_maintenance">Fleet Maintenance</option>
             </select>
           </div>
         </div>

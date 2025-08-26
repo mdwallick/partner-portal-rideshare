@@ -4,7 +4,7 @@ import { auth0 } from "@/lib/auth0"
 import { checkPlatformPermission, listObjects } from "@/lib/fga"
 
 // GET /api/users/[id] - Get a single user by ID
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth0.getSession()
     const user = session?.user
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userId = params.id
+    const { id: userId } = await params
 
     // Check if user is a super admin
     const isSuperAdmin = await checkPlatformPermission(user.sub, "PLATFORM_SUPER_ADMIN")
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT /api/users/[id] - Update a user by ID
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth0.getSession()
     const user = session?.user
@@ -116,7 +116,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userId = params.id
+    const { id: userId } = await params
     const body = await request.json()
     const { email, display_name } = body
 
@@ -198,7 +198,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/users/[id] - Delete a user by ID
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await auth0.getSession()
     const user = session?.user
@@ -207,7 +210,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userId = params.id
+    const { id: userId } = await params
 
     // Check if user is a super admin
     const isSuperAdmin = await checkPlatformPermission(user.sub, "PLATFORM_SUPER_ADMIN")

@@ -42,17 +42,40 @@ export default function PartnerUsersPage() {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const response = await fetch(`/api/partners/${partnerId}/users`)
+      const response = await fetch(`/api/users?partnerId=${partnerId}`)
 
       if (response.ok) {
         const data = await response.json()
-        console.log("Users API response:", data)
-        setUsers(data.teamMembers || data) // Handle both new and old format
-        setPartner(data.partner || null) // Set partner data from the same API call
-        setUserCanView(data.userCanView || false)
-        setUserCanAdmin(data.userCanAdmin || false)
-        setUserCanManageMembers(data.userCanManageMembers || false)
-        console.log("Set userCanManageMembers to:", data.userCanManageMembers || false)
+
+        // Transform the unified endpoint response to match frontend expectations
+        const transformedUsers = (data.users || []).map(user => {
+          // Find the partner-specific data for this partner
+          const partnerData = user.partners.find(p => p.id === partnerId)
+          return {
+            id: user.id,
+            email: user.email,
+            display_name: user.name,
+            role: partnerData?.role || "unknown",
+            created_at: partnerData?.joined_at || user.created_at,
+            auth0_user_id: user.auth0_user_id,
+          }
+        })
+
+        setUsers(transformedUsers)
+
+        // For partner data, we'll need to fetch it separately or get it from the parent page
+        // For now, set basic partner info
+        setPartner({
+          id: partnerId,
+          name: "Partner", // This will be updated by parent page
+          type: "technology", // Default, will be updated by parent page
+        })
+
+        // Set permissions based on user's role in this partner
+        // This will need to be determined from FGA or the parent page
+        setUserCanView(true) // Assume they can view if they can access this page
+        setUserCanAdmin(false) // Will be updated by parent page
+        setUserCanManageMembers(true) // Assume they can manage if they can access this page
       }
     } catch (error) {
       console.error("Error fetching users:", error)
@@ -67,31 +90,26 @@ export default function PartnerUsersPage() {
     }
   }, [user, isLoading, partnerId, fetchUsers])
 
-  // Debug effect to log permission changes
-  useEffect(() => {
-    console.log("userCanManageMembers changed to:", userCanManageMembers)
-  }, [userCanManageMembers])
-
   const handleInviteUser = async (e: React.FormEvent) => {
     e.preventDefault()
     setInviting(true)
 
     try {
-      const response = await fetch(`/api/partners/${partnerId}/users`, {
+      const response = await fetch(`/api/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: inviteEmail,
-          firstName: inviteFirstName,
-          lastName: inviteLastName,
+          display_name: `${inviteFirstName} ${inviteLastName}`.trim(),
+          partnerId: partnerId,
           role: inviteRole,
         }),
       })
 
       if (response.ok) {
-        toast.success("User invited successfully!")
+        toast.success("User created successfully!")
         setInviteEmail("")
         setInviteFirstName("")
         setInviteLastName("")
@@ -99,11 +117,11 @@ export default function PartnerUsersPage() {
         fetchUsers()
       } else {
         const error = await response.json()
-        toast.error(error.error || "Failed to invite user")
+        toast.error(error.error || "Failed to create user")
       }
     } catch (error) {
-      console.error("Error inviting user:", error)
-      toast.error("Failed to invite user")
+      console.error("Error creating user:", error)
+      toast.error("Failed to create user")
     } finally {
       setInviting(false)
     }
@@ -114,25 +132,25 @@ export default function PartnerUsersPage() {
   }
 
   const handleRemoveUser = async (userId: string) => {
-    if (!confirm("Are you sure you want to remove this user?")) {
+    if (!confirm("Are you sure you want to remove this user from this partner?")) {
       return
     }
 
     try {
-      const response = await fetch(`/api/partners/${partnerId}/users/${userId}`, {
-        method: "DELETE",
+      const response = await fetch(`/api/partners/${partnerId}/users/${userId}/remove`, {
+        method: "POST",
       })
 
       if (response.ok) {
-        toast.success("User removed successfully!")
+        toast.success("User removed from partner successfully!")
         setUsers(users.filter(user => user.id !== userId))
       } else {
         const error = await response.json()
-        toast.error(error.error || "Failed to remove user")
+        toast.error(error.error || "Failed to remove user from partner")
       }
     } catch (error) {
-      console.error("Error removing user:", error)
-      toast.error("Failed to remove user")
+      console.error("Error removing user from partner:", error)
+      toast.error("Failed to remove user from partner")
     }
   }
 

@@ -93,13 +93,13 @@ export default function ClientDetailsPage() {
   }
 
   const copyClientId = async () => {
-    if (client?.id) {
+    if (client?.auth0_client_id) {
       try {
-        await navigator.clipboard.writeText(client.id)
+        await navigator.clipboard.writeText(client.auth0_client_id)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
       } catch (error) {
-        console.error("Failed to copy client ID:", error)
+        console.error("Failed to copy Auth0 client ID:", error)
       }
     }
   }
@@ -277,11 +277,21 @@ export default function ClientDetailsPage() {
               <p className="text-gray-300 mb-4">{getClientTypeDescription(client.type)}</p>
 
               {/* Created Date */}
-              <div className="flex items-center text-sm text-gray-400">
+              <div className="flex items-center text-sm text-gray-400 mb-3">
                 <Calendar className="mr-2 h-4 w-4" />
                 Created on {new Date(client.created_at).toLocaleDateString()} at{" "}
                 {new Date(client.created_at).toLocaleTimeString()}
               </div>
+
+              {/* Auth0 Client ID */}
+              {client.auth0_client_id && (
+                <div className="flex items-center text-sm text-gray-400">
+                  <span className="mr-2 text-gray-500">Auth0 Client ID:</span>
+                  <code className="bg-gray-700 px-2 py-1 rounded text-xs font-mono text-gray-300">
+                    {client.auth0_client_id}
+                  </code>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -295,7 +305,7 @@ export default function ClientDetailsPage() {
               className="w-full flex items-center justify-center px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
             >
               <Copy className="mr-2 h-4 w-4" />
-              {copied ? "Copied!" : "Copy Client ID"}
+              {copied ? "Copied!" : "Copy Auth0 Client ID"}
             </button>
 
             <Link

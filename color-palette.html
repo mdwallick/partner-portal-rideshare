@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Partner Portal - Color Palette</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #1a1a2e;
+        color: white;
+        padding: 2rem;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 3rem;
+        color: #ff6b35;
+        font-size: 2.5rem;
+      }
+
+      .color-section {
+        margin-bottom: 3rem;
+        background: #16213e;
+        border-radius: 12px;
+        padding: 2rem;
+        border: 1px solid #334155;
+      }
+
+      .section-title {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        color: #ff6b35;
+        border-bottom: 2px solid #ff6b35;
+        padding-bottom: 0.5rem;
+      }
+
+      .color-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .color-card {
+        background: #0f0f23;
+        border-radius: 8px;
+        padding: 1.5rem;
+        border: 1px solid #334155;
+        transition: transform 0.2s ease;
+      }
+
+      .color-card:hover {
+        transform: translateY(-2px);
+        border-color: #ff6b35;
+      }
+
+      .color-swatch {
+        width: 100%;
+        height: 80px;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        border: 2px solid #334155;
+        position: relative;
+      }
+
+      .color-info h3 {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+        color: #e2e8f0;
+      }
+
+      .hex-code {
+        font-family: "Monaco", "Menlo", monospace;
+        background: #334155;
+        padding: 0.5rem;
+        border-radius: 4px;
+        color: #f1f5f9;
+        font-size: 0.9rem;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+      }
+
+      .tailwind-class {
+        font-family: "Monaco", "Menlo", monospace;
+        background: #475569;
+        padding: 0.5rem;
+        border-radius: 4px;
+        color: #f1f5f9;
+        font-size: 0.8rem;
+        display: inline-block;
+      }
+
+      .usage-note {
+        font-size: 0.85rem;
+        color: #94a3b8;
+        margin-top: 0.5rem;
+        font-style: italic;
+      }
+
+      .custom-components {
+        background: #16213e;
+        border-radius: 12px;
+        padding: 2rem;
+        border: 1px solid #334155;
+      }
+
+      .component-example {
+        background: #0f0f23;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        border: 1px solid #334155;
+      }
+
+      .btn-example {
+        display: inline-block;
+        margin: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+      }
+
+      .btn-primary-example {
+        background: #ff6b35;
+        color: white;
+      }
+
+      .btn-primary-example:hover {
+        background: #e55a2b;
+      }
+
+      .btn-secondary-example {
+        background: #e2e8f0;
+        color: #0f172a;
+      }
+
+      .btn-secondary-example:hover {
+        background: #cbd5e1;
+      }
+
+      .btn-danger-example {
+        background: #ef4444;
+        color: white;
+      }
+
+      .btn-danger-example:hover {
+        background: #dc2626;
+      }
+
+      .btn-success-example {
+        background: #10b981;
+        color: white;
+      }
+
+      .btn-success-example:hover {
+        background: #059669;
+      }
+
+      .btn-accent-example {
+        background: #0ea5e9;
+        color: white;
+      }
+
+      .btn-accent-example:hover {
+        background: #0284a8;
+      }
+
+      .card-example {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+      }
+
+      .card-dark-example {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        color: white;
+      }
+
+      .input-example {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        margin: 1rem 0;
+      }
+
+      .input-dark-example {
+        width: 100%;
+        padding: 0.75rem;
+        background: #334155;
+        border: 1px solid #475569;
+        border-radius: 6px;
+        margin: 1rem 0;
+        color: white;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 3rem;
+        padding: 2rem;
+        color: #94a3b8;
+        border-top: 1px solid #334155;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎨 Partner Portal Color Palette</h1>
+
+      <!-- Waymo Primary Colors -->
+      <div class="color-section">
+        <h2 class="section-title">Primary Colors</h2>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background: #1a1a2e"></div>
+            <div class="color-info">
+              <h3>Primary</h3>
+              <div class="hex-code">#1a1a2e</div>
+              <div class="tailwind-class">bg-waymo-primary</div>
+              <div class="usage-note">Main background, dark theme base</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #16213e"></div>
+            <div class="color-info">
+              <h3>Primary Light</h3>
+              <div class="hex-code">#16213e</div>
+              <div class="tailwind-class">bg-waymo-primary-light</div>
+              <div class="usage-note">Sidebar, secondary backgrounds</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #0f0f23"></div>
+            <div class="color-info">
+              <h3>Primary Dark</h3>
+              <div class="hex-code">#0f0f23</div>
+              <div class="tailwind-class">bg-waymo-primary-dark</div>
+              <div class="usage-note">Deep backgrounds, cards</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Secondary Colors -->
+      <div class="color-section">
+        <h2 class="section-title">Secondary Colors</h2>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background: #ff6b35"></div>
+            <div class="color-info">
+              <h3>Secondary</h3>
+              <div class="hex-code">#ff6b35</div>
+              <div class="tailwind-class">bg-waymo-secondary</div>
+              <div class="usage-note">Primary buttons, highlights</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #ff8c42"></div>
+            <div class="color-info">
+              <h3>Secondary Light</h3>
+              <div class="hex-code">#ff8c42</div>
+              <div class="tailwind-class">bg-waymo-secondary-light</div>
+              <div class="usage-note">Hover states, secondary actions</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #e55a2b"></div>
+            <div class="color-info">
+              <h3>Secondary Dark</h3>
+              <div class="hex-code">#e55a2b</div>
+              <div class="tailwind-class">bg-waymo-secondary-dark</div>
+              <div class="usage-note">Active states, pressed buttons</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accent Colors -->
+      <div class="color-section">
+        <h2 class="section-title">Accent Colors</h2>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background: #0ea5e9"></div>
+            <div class="color-info">
+              <h3>Accent</h3>
+              <div class="hex-code">#0ea5e9</div>
+              <div class="tailwind-class">bg-waymo-accent</div>
+              <div class="usage-note">Links, focus rings, info elements</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #06b6d4"></div>
+            <div class="color-info">
+              <h3>Accent Light</h3>
+              <div class="hex-code">#06b6d4</div>
+              <div class="tailwind-class">bg-waymo-accent-light</div>
+              <div class="usage-note">Hover states, secondary accents</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #0284a8"></div>
+            <div class="color-info">
+              <h3>Accent Dark</h3>
+              <div class="hex-code">#0284a8</div>
+              <div class="tailwind-class">bg-waymo-accent-dark</div>
+              <div class="usage-note">Active states, deep accents</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Colors -->
+      <div class="color-section">
+        <h2 class="section-title">Status Colors</h2>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background: #10b981"></div>
+            <div class="color-info">
+              <h3>Success</h3>
+              <div class="hex-code">#10b981</div>
+              <div class="tailwind-class">bg-waymo-success</div>
+              <div class="usage-note">Success messages, completed states</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #f59e0b"></div>
+            <div class="color-info">
+              <h3>Warning</h3>
+              <div class="hex-code">#f59e0b</div>
+              <div class="tailwind-class">bg-waymo-warning</div>
+              <div class="usage-note">Warnings, pending states</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #ef4444"></div>
+            <div class="color-info">
+              <h3>Danger</h3>
+              <div class="hex-code">#ef4444</div>
+              <div class="tailwind-class">bg-waymo-danger</div>
+              <div class="usage-note">Errors, destructive actions</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Neutral Colors -->
+      <div class="color-section">
+        <h2 class="section-title">Neutral Colors</h2>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background: #f8fafc"></div>
+            <div class="color-info">
+              <h3>Neutral 50</h3>
+              <div class="hex-code">#f8fafc</div>
+              <div class="tailwind-class">bg-waymo-neutral-50</div>
+              <div class="usage-note">Light backgrounds, subtle highlights</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #e2e8f0"></div>
+            <div class="color-info">
+              <h3>Neutral 200</h3>
+              <div class="hex-code">#e2e8f0</div>
+              <div class="tailwind-class">bg-waymo-neutral-200</div>
+              <div class="usage-note">Borders, dividers, light elements</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #cbd5e1"></div>
+            <div class="color-info">
+              <h3>Neutral 300</h3>
+              <div class="hex-code">#cbd5e1</div>
+              <div class="tailwind-class">bg-waymo-neutral-300</div>
+              <div class="usage-note">Hover states, secondary borders</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #94a3b8"></div>
+            <div class="color-info">
+              <h3>Neutral 400</h3>
+              <div class="hex-code">#94a3b8</div>
+              <div class="tailwind-class">bg-waymo-neutral-400</div>
+              <div class="usage-note">Secondary text, muted elements</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #64748b"></div>
+            <div class="color-info">
+              <h3>Neutral 500</h3>
+              <div class="hex-code">#64748b</div>
+              <div class="tailwind-class">bg-waymo-neutral-500</div>
+              <div class="usage-note">Medium text, icons</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #475569"></div>
+            <div class="color-info">
+              <h3>Neutral 600</h3>
+              <div class="hex-code">#475569</div>
+              <div class="tailwind-class">bg-waymo-neutral-600</div>
+              <div class="usage-note">Borders, secondary backgrounds</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #334155"></div>
+            <div class="color-info">
+              <h3>Neutral 700</h3>
+              <div class="hex-code">#334155</div>
+              <div class="tailwind-class">bg-waymo-neutral-700</div>
+              <div class="usage-note">Card backgrounds, borders</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #1e293b"></div>
+            <div class="color-info">
+              <h3>Neutral 800</h3>
+              <div class="hex-code">#1e293b</div>
+              <div class="tailwind-class">bg-waymo-neutral-800</div>
+              <div class="usage-note">Dark cards, elevated elements</div>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background: #0f172a"></div>
+            <div class="color-info">
+              <h3>Neutral 900</h3>
+              <div class="hex-code">#0f172a</div>
+              <div class="tailwind-class">bg-waymo-neutral-900</div>
+              <div class="usage-note">Deep backgrounds, text</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Components -->
+      <div class="custom-components">
+        <h2 class="section-title">Custom Component Examples</h2>
+
+        <div class="component-example">
+          <h3 style="margin-bottom: 1rem; color: #ff6b35">Button Components</h3>
+          <a href="#" class="btn-example btn-primary-example">Primary Button</a>
+          <a href="#" class="btn-example btn-secondary-example">Secondary Button</a>
+          <a href="#" class="btn-example btn-danger-example">Danger Button</a>
+          <a href="#" class="btn-example btn-success-example">Success Button</a>
+          <a href="#" class="btn-example btn-accent-example">Accent Button</a>
+        </div>
+
+        <div class="component-example">
+          <h3 style="margin-bottom: 1rem; color: #ff6b35">Card Components</h3>
+          <div class="card-example">
+            <h4 style="margin-bottom: 0.5rem; color: #0f172a">Light Card</h4>
+            <p style="color: #475569">
+              This is an example of a light card component using the neutral color palette.
+            </p>
+          </div>
+          <div class="card-dark-example">
+            <h4 style="margin-bottom: 0.5rem; color: white">Dark Card</h4>
+            <p style="color: #cbd5e1">
+              This is an example of a dark card component using the primary and neutral color
+              palette.
+            </p>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h3 style="margin-bottom: 1rem; color: #ff6b35">Input Components</h3>
+          <input type="text" placeholder="Light input field" class="input-example" />
+          <input type="text" placeholder="Dark input field" class="input-dark-example" />
+        </div>
+      </div>
+
+      <!-- Color Usage Guidelines -->
+      <div class="color-section">
+        <h2 class="section-title">Color Usage Guidelines</h2>
+        <div class="color-grid">
+          <div class="color-card">
+            <h3 style="color: #ff6b35">Primary Actions</h3>
+            <p style="color: #cbd5e1; margin-top: 0.5rem">
+              Use <strong>waymo-secondary</strong> (#ff6b35) for primary buttons, CTAs, and
+              important actions.
+            </p>
+          </div>
+          <div class="color-card">
+            <h3 style="color: #0ea5e9">Interactive Elements</h3>
+            <p style="color: #cbd5e1; margin-top: 0.5rem">
+              Use <strong>waymo-accent</strong> (#0ea5e9) for links, focus rings, and interactive
+              elements.
+            </p>
+          </div>
+          <div class="color-card">
+            <h3 style="color: #10b981">Success States</h3>
+            <p style="color: #cbd5e1; margin-top: 0.5rem">
+              Use <strong>waymo-success</strong> (#10b981) for completed actions, success messages,
+              and positive feedback.
+            </p>
+          </div>
+          <div class="color-card">
+            <h3 style="color: #ef4444">Error States</h3>
+            <p style="color: #cbd5e1; margin-top: 0.5rem">
+              Use <strong>waymo-danger</strong> (#ef4444) for errors, destructive actions, and
+              critical warnings.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>🎨 Partner Portal Color Palette - Built with Tailwind CSS</p>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem">Inspired by Waymo's design language</p>
+      </div>
+    </div>
+  </body>
+</html>
