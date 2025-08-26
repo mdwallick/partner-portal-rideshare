@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth0 } from "@/lib/auth0"
 import { auth0ManagementAPI } from "@/lib/auth0-management"
-import { checkPartnerPermission, checkPlatformPermission, writeTuple, deleteTuple } from "@/lib/fga"
-import { createFgaClient, createFgaPartner, createFgaUser, FGA_RELATIONS } from "@/lib/fga-model"
+import { checkPartnerPermission, writeTuple } from "@/lib/fga"
+import { createPermissionChecker } from "@/lib/permission-helpers"
+import { createFgaClient, createFgaPartner } from "@/lib/fga-model"
 
 export async function GET() {
   try {
@@ -14,8 +15,11 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Create permission checker for this request
+    const permissionChecker = createPermissionChecker()
+
     // Check if user is super admin first
-    const isSuperAdmin = await checkPlatformPermission(user.sub, "PLATFORM_SUPER_ADMIN", "default")
+    const isSuperAdmin = await permissionChecker.checkSuperAdmin(user.sub)
 
     if (isSuperAdmin) {
       // Super admin can see all clients
@@ -119,6 +123,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Create permission checker for this request
+    const permissionChecker = createPermissionChecker()
+
+    // Check if user is super admin first
+    let isSuperAdmin = await permissionChecker.checkSuperAdmin(user.sub)
+
     let name: string
     let type: "native_mobile_android" | "native_mobile_ios" | "web" | "M2M"
     let picture_url: string | undefined
@@ -147,8 +157,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user is super admin first
-    const isSuperAdmin = await checkPlatformPermission(user.sub, "PLATFORM_SUPER_ADMIN", "default")
+    // Use the permission checker from earlier in the request
+    isSuperAdmin = permissionChecker.getSuperAdminStatus()
 
     let partner: any
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth0 } from "@/lib/auth0"
-import { checkPlatformPermission, listObjects } from "@/lib/fga"
+import { createPermissionChecker, batchListObjects } from "@/lib/permission-helpers"
 
 // GET /api/users - Get all users (filtered by FGA permissions)
 export async function GET(request: NextRequest) {
@@ -21,8 +21,11 @@ export async function GET(request: NextRequest) {
     const partnerId = searchParams.get("partnerId") || ""
     const role = searchParams.get("role") || ""
 
-    // Check if user is a super admin
-    const isSuperAdmin = await checkPlatformPermission(user.sub, "PLATFORM_SUPER_ADMIN")
+    // Create permission checker for this request
+    const permissionChecker = createPermissionChecker()
+
+    // Check if user is a super admin (consolidated check)
+    const isSuperAdmin = await permissionChecker.checkSuperAdmin(user.sub)
 
     let allowedPartnerIds: string[] = []
 
@@ -36,23 +39,22 @@ export async function GET(request: NextRequest) {
       // console.log("👥 User is partner user - checking partner access")
       // console.log("🔍 User ID being checked:", `user:${user.sub}`)
 
-      // Partner user can only see users in their partner organizations
-      const userPartners = await listObjects(`user:${user.sub}`, "can_admin", "partner")
-      const userManagePartners = await listObjects(
-        `user:${user.sub}`,
-        "can_manage_members",
+      // Batch multiple listObjects calls into a single operation
+      const partnerPermissions = await batchListObjects(
+        user.sub,
+        ["can_admin", "can_manage_members", "can_view"],
         "partner"
       )
-      const userViewPartners = await listObjects(`user:${user.sub}`, "can_view", "partner")
 
-      // console.log("🏢 Partner access results:")
-      // console.log("  - can_admin:", userPartners)
-      // console.log("  - can_manage_members:", userManagePartners)
-      // console.log("  - can_view:", userViewPartners)
+      // console.log("🏢 Partner access results:", partnerPermissions)
 
       // Combine all partner IDs the user has access to
       allowedPartnerIds = Array.from(
-        new Set([...userPartners, ...userManagePartners, ...userViewPartners])
+        new Set([
+          ...partnerPermissions.can_admin,
+          ...partnerPermissions.can_manage_members,
+          ...partnerPermissions.can_view,
+        ])
       )
 
       // console.log("🔗 Combined allowed partner IDs:", allowedPartnerIds)
@@ -231,7 +233,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has permission to create users in this partner
-    const isSuperAdmin = await checkPlatformPermission(user.sub, "PLATFORM_SUPER_ADMIN")
+    // Use the permission checker from earlier in the request
+    const isSuperAdmin = permissionChecker.getSuperAdminStatus()
     if (!isSuperAdmin) {
       // Check if user can manage members in the specified partner
       const { checkPartnerPermission } = await import("@/lib/fga")
