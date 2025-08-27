@@ -1,6 +1,6 @@
-# Partner Portal - Streaming Platform
+# Partner Portal - Rideshare Platform
 
-A comprehensive partner portal for managing game studios and merch suppliers, built with Next.js, Okta for AuthN, Auth0 FGA for AuthZ, and Neon DB.
+A comprehensive partner portal for managing rideshare technology and manufacturing partners, built with Next.js, Auth0 for authentication, Auth0 FGA for fine-grained authorization, and PostgreSQL.
 
 ## ⚠️ Disclaimer
 
@@ -14,59 +14,60 @@ You are solely responsible for evaluating its fitness for your intended use, and
 
 ### Authentication & Authorization
 
-- **Okta Integration**: Secure authentication with SSO and social login support
+- **Auth0 Integration**: Secure authentication with Universal Login and social login support
 - **Auth0 FGA**: Fine-grained authorization with relationship-based access control
-- **Role-based Access**: Different permissions for partner admins, users, and CR admins
+- **Role-based Access**: Different permissions for partner admins, users, and system admins
 
 ### Partner Management
 
-- **Game Studios**: Create and manage games, client IDs, and metadata
-- **Merch Suppliers**: Manage product catalog with SKUs and categories
+- **Technology Partners**: Create and manage client applications (web, mobile, M2M)
+- **Manufacturing Partners**: Manage documents and manufacturing capabilities
+- **Fleet Maintenance Partners**: Access to rideshare map and fleet operations
 - **User Management**: Invite and manage team members within partner organizations
 
 ### Dashboard & Analytics
 
 - **Partner Dashboard**: Overview with stats and quick actions
-- **Game Management**: Full CRUD operations for games and client IDs
-- **Product Management**: Complete SKU lifecycle management
+- **Client Management**: Full CRUD operations for client applications
+- **Document Management**: Complete document lifecycle management
+- **Metro Area Management**: Geographic access control for rideshare operations
 - **Audit Logging**: Track all system activities
 
 ## 🛠 Tech Stack
 
-- **Frontend**: Next.js 14, React 18, TypeScript
+- **Frontend**: Next.js 15, React 18, TypeScript
 - **Styling**: Tailwind CSS, Headless UI
-- **Authentication**: Okta
+- **Authentication**: Auth0 Universal Login
 - **Authorization**: Auth0 FGA (Fine-Grained Authorization)
-- **Database**: Neon (PostgreSQL)
+- **Database**: PostgreSQL with Prisma ORM
 - **Icons**: Lucide React
-- **Forms**: React Hook Form
+- **Forms**: React Hook Form with Zod validation
 - **Notifications**: React Hot Toast
+- **Maps**: Leaflet for rideshare visualization
+- **Testing**: Cypress for E2E testing
 
 ## 📋 Prerequisites
 
-- Node.js 18+
-- npm or yarn
-- Okta account
-- Auth0 FGA account
-- Neon database account
+- **Node.js** 18+ 
+- **npm** or **yarn**
+- **Auth0 account** with Universal Login configured
+- **Auth0 FGA account** for authorization
+- **PostgreSQL database** (local or cloud)
+- **Git** for version control
 
 ## 🚀 Quick Start
 
-### 1. Locally Clone and Install
+### 1. Clone and Install
 
 ```bash
-git clone https://github.com/nicotriballier/partner-portal-okta-idp-with-auth0-fga.git
-cd partner-portal-okta-idp-with-auth0-fga
+git clone <your-repository-url>
+cd partner-portal-rideshare
 npm install
 ```
 
 ### 2. Environment Setup
 
-For this demo env, get the .env.local file from the [shared Google Folder](https://drive.google.com/file/d/1UC0wUkAtQUWezninw6lEKxAclxQZ1mIW/view?usp=drive_link)
-
-**Then SKIP TO STEP 5** ❗
-
-Copy the environment example and configure your variables
+Copy the environment example file and configure your variables:
 
 ```bash
 cp env.example .env.local
@@ -75,25 +76,30 @@ cp env.example .env.local
 Update `.env.local` with your credentials:
 
 ```env
-# Okta Configuration
-OKTA_ISSUER='https://YOUR_OKTA_DOMAIN'
-OKTA_CLIENT_ID='YOUR_OKTA_CLIENT_ID'
-OKTA_CLIENT_SECRET='YOUR_OKTA_CLIENT_SECRET'
-OKTA_REDIRECT_URI='http://localhost:3000/login/callback'
+# Auth0 Configuration
+AUTH0_SECRET='your-auth0-secret'
+AUTH0_SCOPE='openid profile email'
+AUTH0_AUDIENCE='your-api-audience'
 
-# Okta Management API Configuration
-OKTA_API_TOKEN='YOUR_OKTA_API_TOKEN'
+AUTH0_DOMAIN='your-tenant.auth0.com'
+AUTH0_CLIENT_ID='your-client-id'
+AUTH0_CLIENT_SECRET='your-client-secret'
 
-# Auth0 FGA Configuration
-FGA_API_URL='https://api.fga.example'
-FGA_STORE_ID='YOUR_FGA_STORE_ID'
-FGA_AUTHORIZATION_MODEL_ID='YOUR_FGA_AUTHORIZATION_MODEL_ID'
-FGA_API_TOKEN_ISSUER='https://YOUR_OKTA_DOMAIN/'
+# Auth0 Management API
+AUTH0_MGMT_API_DOMAIN='your-tenant.auth0.com'
+AUTH0_MGMT_CLIENT_ID='your-mgmt-client-id'
+AUTH0_MGMT_CLIENT_SECRET='your-mgmt-client-secret'
+
+# FGA Configuration
+FGA_API_URL='https://api.fga.dev'
+FGA_STORE_ID='your-fga-store-id'
+FGA_AUTHORIZATION_MODEL_ID='your-fga-model-id'
+FGA_API_TOKEN_ISSUER='auth.fga.dev'
 FGA_API_AUDIENCE='https://api.openfga.example/'
-FGA_CLIENT_ID='YOUR_FGA_CLIENT_ID'
-FGA_CLIENT_SECRET='YOUR_FGA_CLIENT_SECRET'
+FGA_CLIENT_ID='your-fga-client-id'
+FGA_CLIENT_SECRET='your-fga-client-secret'
 
-# Neon Database Configuration
+# Database
 DATABASE_URL='postgresql://username:password@host:port/database'
 
 # API Configuration
@@ -101,71 +107,79 @@ NEXT_PUBLIC_API_BASE_URL='http://localhost:3000/api'
 
 # Application Configuration
 NEXT_PUBLIC_APP_NAME='Partner Portal'
-NEXT_PUBLIC_APP_DESCRIPTION='Streaming Platform Partner Portal'
+NEXT_PUBLIC_APP_DESCRIPTION='Rideshare Platform Partner Portal'
 
+# Development Configuration
+NEXT_PUBLIC_STRICT_MODE='true'
 ```
 
 ### 3. Database Setup
 
-The application uses Neon PostgreSQL with the following schema:
+The application uses PostgreSQL with Prisma ORM. The schema includes:
 
-#### Tables
-
-- `partners` - Partner organizations (game studios & merch suppliers)
+#### Core Tables
+- `partners` - Partner organizations (technology, manufacturing, fleet maintenance)
 - `users` - User metadata linked to Auth0
-- `games` - Games owned by game studio partners
-- `client_ids` - Client IDs associated with games
-- `skus` - SKUs managed by merch supplier partners
+- `partner_users` - User relationships within partners
+- `client_ids` - Client applications for technology partners
+- `documents` - Documents for manufacturing partners
+- `metro_areas` - Geographic areas for rideshare operations
+- `partner_metro_areas` - Partner access to metro areas
+- `partner_manufacturing_capabilities` - Manufacturing partner capabilities
 - `audit_logs` - System audit trail
 
-#### Key Features
-
-- UUID primary keys for security
-- Foreign key relationships with CASCADE deletes
-- Automatic timestamps (created_at, updated_at)
-- Performance indexes on frequently queried columns
-- ENUM types for data validation
+#### Setup Database
 
 ```bash
-brew install postgresql
+# Generate Prisma client
+npm run prisma:generate
+
+# Run database migrations
+npm run prisma:migrate
+
+# (Optional) Open Prisma Studio to view/edit data
+npm run prisma:studio
 ```
 
-### 4. Okta Configuration
+### 4. Auth0 Configuration
 
-1. Create an Okta application
-2. Configure callback URLs: `http://localhost:3000/login/callback`
-3. Set up your Auth0 FGA store
-4. Configure the authorization model (see `fga-model.dsl`)
+1. **Create Auth0 Application**:
+   - Go to Auth0 Dashboard → Applications → Create Application
+   - Choose "Single Page Application" for Next.js
+   - Configure callback URLs: `http://localhost:3000/api/auth/callback`
+   - Configure logout URLs: `http://localhost:3000`
 
-#### Okta Groups Setup (equivalent to Auth0 Organizations)
+2. **Configure Auth0 Management API**:
+   - Go to Auth0 Dashboard → Applications → APIs
+   - Enable "Auth0 Management API"
+   - Create a Machine-to-Machine application
+   - Grant necessary scopes: `read:users`, `create:users`, `update:users`, `delete:users`
 
-1. **Create Groups**: In your Okta dashboard, go to "Directory" → "Groups"
-2. **Create Management API Token**:
-   - Go to "Security" → "API" → "Tokens"
-   - Create a new API token with the following scopes:
-     - `okta.groups.manage`
-     - `okta.users.manage`
-     - `okta.users.read`
-3. **Configure Environment Variables**:
-   - Add `OKTA_API_TOKEN` to your `.env.local`
-   - This is the API token you created for management operations
+3. **Set up Organizations** (for partner management):
+   - Go to Auth0 Dashboard → Organizations
+   - Enable Organizations feature
+   - Configure organization settings
 
 ### 5. Auth0 FGA Configuration
 
-1. Create an Okta Machine-to-Machine application for FGA
-2. Deploy your authorization model to FGA (see `fga-model.dsl`)
-3. Configure the following environment variables:
-   - `FGA_STORE_ID`: Your FGA store ID
-   - `FGA_AUTHORIZATION_MODEL_ID`: Your deployed authorization model ID
-   - `FGA_API_TOKEN_ISSUER`: Your Okta domain (e.g., `https://your-tenant.okta.com/`)
-   - `FGA_API_AUDIENCE`: The FGA API audience (e.g., `https://api.openfga.example/`)
-   - `FGA_CLIENT_ID`: Your M2M application client ID
-   - `FGA_CLIENT_SECRET`: Your M2M application client secret
-4. Grant the necessary scopes to your M2M application
+1. **Create FGA Store**:
+   - Go to [Auth0 FGA Console](https://console.fga.dev)
+   - Create a new store
+   - Note your store ID
 
-### 5. Run the Application
+2. **Deploy Authorization Model**:
+   - Use the model from `model.fga.yaml`
+   - Deploy to your FGA store
+   - Note your model ID
+
+3. **Configure FGA API Access**:
+   - Create API credentials in FGA console
+   - Update environment variables with your credentials
+
+### 6. Run the Application
 
 ```bash
+# Start development server
 npm run dev
 ```
 
@@ -174,34 +188,43 @@ Visit `http://localhost:3000` to see the application.
 ## 📁 Project Structure
 
 ```
-├── app/                    # Next.js 14 app directory
+├── app/                    # Next.js 15 app directory
 │   ├── api/               # API routes
+│   │   ├── admin/         # Admin-only endpoints
 │   │   ├── auth/          # Auth0 authentication
-│   │   ├── games/         # Game management API
+│   │   ├── clients/       # Client management API
+│   │   ├── documents/     # Document management API
+│   │   ├── metro-areas/   # Metro area management API
 │   │   ├── partners/      # Partner management API
-│   │   └── sku/           # SKU management API
+│   │   └── users/         # User management API
 │   ├── dashboard/         # Dashboard pages
-│   │   ├── games/         # Game management UI
-│   │   ├── products/      # Product management UI
-│   │   └── users/         # User management UI
-│   ├── login/             # Login page
+│   │   ├── clients/       # Client management UI
+│   │   ├── documents/     # Document management UI
+│   │   ├── partners/      # Partner management UI
+│   │   ├── users/         # User management UI
+│   │   └── rideshare-map/ # Rideshare visualization
 │   ├── globals.css        # Global styles
 │   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Home page
+│   └── page.tsx           # Landing page
 ├── lib/                   # Utility libraries
 │   ├── auth0.ts           # Auth0 configuration
-│   ├── database.ts        # Database connection & types
-│   └── fga.ts             # FGA client & helpers
-├── components/            # Reusable components
-├── types/                 # TypeScript type definitions
-└── public/                # Static assets
+│   ├── fga.ts             # FGA client & helpers
+│   ├── permission-helpers.ts # Permission optimization helpers
+│   ├── prisma.ts          # Database connection
+│   └── types.ts           # TypeScript definitions
+├── prisma/                # Database schema & migrations
+│   ├── schema.prisma      # Database schema
+│   └── migrations/        # Database migrations
+├── components/            # Reusable UI components
+├── cypress/               # E2E testing
+└── scripts/               # Utility scripts
 ```
 
 ## 🔐 Authorization Model
 
 The application uses Auth0 FGA with the following model:
 
-```dsl
+```yaml
 model
   schema 1.1
 
@@ -210,132 +233,175 @@ type user
 type partner
   relations
     define can_admin: [user] or super_admin from parent
-    define can_manage_members: [user] or can_admin or can_manage_all from parent
-    define can_view: [user] or can_manage_members or can_view_all from parent
+    define can_manage_members: [user] or can_admin or super_admin from parent
+    define can_view: [user] or can_manage_members or super_admin from parent
     define parent: [platform]
-
-type game
-  relations
-    define can_admin: [user] or can_admin from parent
-    define can_view: [user] or can_view from parent
-    define parent: [partner]
-
-type sku
-  relations
-    define can_admin: [user] or can_admin from parent
-    define can_view: [user] or can_view from parent
-    define parent: [partner]
 
 type client
   relations
     define can_admin: [user] or can_admin from parent
     define can_view: [user] or can_view from parent
-    define parent: [game]
+    define parent: [partner]
+
+type metro_area
+  relations
+    define can_admin: [user] or can_admin from parent or super_admin from platform
+    define can_view: [user] or can_view from parent or super_admin from platform
+    define parent: [partner]
+    define platform: [platform]
+
+type document
+  relations
+    define can_admin: [user] or can_admin from parent
+    define can_view: [user] or can_view from parent
+    define parent: [partner]
 
 type platform
   relations
     define can_manage_all: [user] or super_admin
-    define can_view_all: [user] or can_manage_all
-    define manage_cr_admins: [user] or super_admin
+    define can_view_all: [user] or super_admin
+    define manage_sme_admins: [user] or super_admin
     define super_admin: [user]
 ```
 
 ## 🎯 User Roles
 
 ### Partner Roles
-
 - **partner_admin**: Admin within a partner organization
 - **partner_user**: Member within a partner organization
 
-### CR Roles
-
-- **cr_admin**: Internal admin assigned to manage specific partners
-- **cr_super_admin**: Internal admin with full system access
+### System Roles
+- **sys_admin**: Internal admin assigned to manage specific partners
+- **sys_super_admin**: Internal admin with full system access
 
 ## 📊 API Endpoints
 
 ### Authentication
-
-- `GET /api/auth/login` - Okta login
-- `GET /api/auth/callback` - Okta callback
-- `GET /api/auth/logout` - Okta logout
+- `GET /api/auth/login` - Auth0 login
+- `GET /api/auth/callback` - Auth0 callback
+- `GET /api/auth/logout` - Auth0 logout
 
 ### Partners
-
 - `GET /api/partners/me` - Get current partner info
-- `GET /api/partners` - List partners (CR admins only)
-- `POST /api/partners` - Create partner (CR admins only)
+- `GET /api/partners` - List partners (system admins only)
+- `POST /api/partners` - Create partner (system admins only)
 - `PUT /api/partners/:id` - Update partner
-- `POST /api/partners/users` - Invite user
-- `DELETE /api/partners/users/:id` - Remove user
+- `DELETE /api/partners/:id` - Delete partner
 
-### Games
+### Clients
+- `GET /api/clients` - List clients for partner
+- `POST /api/clients` - Create client
+- `PUT /api/clients/:id` - Update client
+- `DELETE /api/clients/:id` - Delete client
 
-- `GET /api/games` - List games for partner
-- `POST /api/games` - Create game
-- `PUT /api/games/:id` - Update game
-- `DELETE /api/games/:id` - Revoke game
-- `POST /api/games/:id/client-ids` - Add client ID
-
-### SKUs
-
-- `GET /api/sku` - List SKUs for partner
-- `POST /api/sku` - Create SKU
-- `PUT /api/sku/:id` - Update SKU
-- `DELETE /api/sku/:id` - Archive SKU
+### Users
+- `GET /api/users` - List users (filtered by permissions)
+- `POST /api/users` - Create user
+- `PUT /api/users/:id` - Update user
+- `DELETE /api/users/:id` - Delete user
 
 ## 🎨 UI Components
 
 The application uses a modern, responsive design with:
 
-- **Tailwind CSS** for styling
+- **Tailwind CSS** for utility-first styling
 - **Headless UI** for accessible components
-- **Lucide React** for icons
-- **React Hot Toast** for notifications
-- **Responsive design** for mobile and desktop
+- **Lucide React** for consistent iconography
+- **React Hot Toast** for user notifications
+- **Leaflet** for interactive maps
+- **Responsive design** for all device sizes
 
 ## 🔧 Development
 
 ### Available Scripts
 
 ```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
+npm run dev              # Start development server
+npm run build            # Build for production
+npm run start            # Start production server
+npm run lint             # Run ESLint
+npm run format           # Format code with Prettier
+npm run type-check       # Run TypeScript type checking
+
+# Database scripts
+npm run prisma:migrate   # Run database migrations
+npm run prisma:generate  # Generate Prisma client
+npm run prisma:studio    # Open Prisma Studio
+npm run prisma:push      # Push schema changes to database
+
+# Testing
+npm run cypress:open     # Open Cypress test runner
+npm run cypress:run      # Run Cypress tests headlessly
 ```
 
-### Code Style
+### Code Quality
 
-- TypeScript for type safety
-- ESLint for code quality
-- Prettier for code formatting
-- Conventional commits for version control
+- **TypeScript** for type safety
+- **ESLint** for code quality and consistency
+- **Prettier** for code formatting
+- **Husky** for git hooks
+- **Conventional commits** for version control
+
+### Testing
+
+- **Cypress** for end-to-end testing
+- **TypeScript** compilation checking
+- **ESLint** for code quality
+- **Prettier** for formatting consistency
 
 ## 🚀 Deployment
 
 ### Vercel (Recommended)
 
 1. Connect your repository to Vercel
-2. Configure environment variables
-3. Deploy automatically on push
+2. Configure environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
+
+### Docker
+
+```bash
+# Build Docker image
+docker build -t partner-portal .
+
+# Run container
+docker run -p 3000:3000 partner-portal
+```
 
 ### Other Platforms
 
 The application can be deployed to any platform that supports Next.js:
-
 - Netlify
 - Railway
 - DigitalOcean App Platform
 - AWS Amplify
 
+## 🧪 Testing
+
+### E2E Testing with Cypress
+
+```bash
+# Open Cypress test runner
+npm run cypress:open
+
+# Run tests headlessly
+npm run cypress:run
+```
+
+Test files are located in `cypress/e2e/` and cover:
+- Authentication flows
+- Partner management
+- User management
+- Client management
+
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+4. Run tests and linting (`npm run lint && npm run type-check`)
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 ## 📄 License
 
@@ -345,10 +411,18 @@ This project is licensed under the MIT License.
 
 For support and questions:
 
-- Check the documentation
+- Check the documentation in this README
 - Open an issue on GitHub
 - Contact the development team
 
+## 🔄 Recent Changes
+
+- **Auth0 Integration**: Replaced Okta with Auth0 Universal Login
+- **FGA Optimization**: Implemented batch operations and permission caching
+- **Partner Types**: Added manufacturing partner capabilities
+- **Metro Areas**: Geographic access control for rideshare operations
+- **Performance**: Optimized FGA API calls and frontend state management
+
 ---
 
-Built with ❤️ for our awesome Okta/Auth0 community.
+Built with ❤️ for the rideshare and partner management community.
