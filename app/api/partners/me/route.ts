@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth0 } from "@/lib/auth0"
-import { checkPlatformPermission } from "@/lib/fga"
 
 export async function GET() {
   try {
@@ -10,20 +9,6 @@ export async function GET() {
 
     if (!user?.sub) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Check if user has super admin permissions
-    const isSuperAdmin = await checkPlatformPermission(user.sub, "PLATFORM_SUPER_ADMIN")
-
-    if (isSuperAdmin) {
-      return NextResponse.json({
-        role: "super_admin",
-        isSuperAdmin: true,
-        user: {
-          id: user.sub,
-          email: user.email,
-        },
-      })
     }
 
     // Find user and their active partner assignments
@@ -49,20 +34,12 @@ export async function GET() {
 
     // For now, return the first active partner (can expand to multiple later)
     const partnerUser = activePartnerUsers[0]
-    // console.log("✅ Returning partner user:", {
-    //   role: partnerUser.role,
-    //   partnerId: partnerUser.partner.id,
-    //   partnerName: partnerUser.partner.name,
-    //   partnerType: partnerUser.partner.type,
-    // })
 
     const responseData = {
       role: partnerUser.role,
       partner: partnerUser.partner,
       isSuperAdmin: false,
     }
-
-    // console.log("📤 Sending response:", JSON.stringify(responseData, null, 2))
 
     return NextResponse.json(responseData)
   } catch (error) {

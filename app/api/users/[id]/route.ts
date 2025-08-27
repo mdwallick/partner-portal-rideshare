@@ -20,9 +20,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!isSuperAdmin) {
       // Check if the requesting user has access to any partners that the target user belongs to
-      const userPartners = await listObjects(user.sub, "can_admin", "partner")
-      const userManagePartners = await listObjects(user.sub, "can_manage_members", "partner")
-      const userViewPartners = await listObjects(user.sub, "can_view", "partner")
+      const userPartners = await listObjects(`user:${user.sub}`, "can_admin", "partner")
+      const userManagePartners = await listObjects(
+        `user:${user.sub}`,
+        "can_manage_members",
+        "partner"
+      )
+      const userViewPartners = await listObjects(`user:${user.sub}`, "can_view", "partner")
 
       const allowedPartnerIds = Array.from(
         new Set([...userPartners, ...userManagePartners, ...userViewPartners])
@@ -130,7 +134,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!isSuperAdmin) {
       // Check if the requesting user has admin access to any partners that the target user belongs to
-      const userAdminPartners = await listObjects(user.sub, "can_admin", "partner")
+      const userAdminPartners = await listObjects(`user:${user.sub}`, "can_admin", "partner")
 
       if (userAdminPartners.length === 0) {
         return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 })

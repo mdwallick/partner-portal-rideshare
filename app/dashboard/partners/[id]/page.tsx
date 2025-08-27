@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import { useParams, useRouter } from "next/navigation"
+import LoadingSpinner from "@/app/components/LoadingSpinner"
 import {
   Building2,
   Users,
@@ -102,12 +103,9 @@ export default function PartnerDetailPage() {
     }
   }
 
+  // Show loading spinner while Auth0 is loading or while fetching partner data
   if (isLoading || loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
-      </div>
-    )
+    return <LoadingSpinner size="xl" text="Loading partner details..." fullScreen={true} />
   }
 
   if (!user) {
@@ -121,20 +119,45 @@ export default function PartnerDetailPage() {
     )
   }
 
-  if (error || !partner) {
+  // Show error state only if we have an error and no partner data
+  if (error && !partner) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Partner Not Found</h1>
-          <p className="text-gray-400 mb-6">
-            {error || "The requested partner could not be found."}
-          </p>
-          <Link href="/dashboard/partners" className="btn-primary">
+          <h1 className="text-2xl font-bold text-white mb-4">Error Loading Partner</h1>
+          <p className="text-gray-400 mb-6">{error}</p>
+          <Link
+            href="/dashboard/partners"
+            className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+          >
             Back to Partners
           </Link>
         </div>
       </div>
     )
+  }
+
+  // Show "not found" only if we're not loading and have no partner data
+  if (!partner && !loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Partner Not Found</h1>
+          <p className="text-gray-400 mb-6">The requested partner could not be found.</p>
+          <Link
+            href="/dashboard/partners"
+            className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            Back to Partners
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // At this point, partner should be defined since we've handled all other cases
+  if (!partner) {
+    return null
   }
 
   return (
@@ -155,6 +178,8 @@ export default function PartnerDetailPage() {
               <div className="flex-shrink-0">
                 {partner.logo_url ? (
                   <Image
+                    width={80}
+                    height={80}
                     src={partner.logo_url}
                     alt={`${partner.name} logo`}
                     className="h-20 w-20 rounded-lg object-cover"

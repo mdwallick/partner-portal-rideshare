@@ -403,6 +403,8 @@ export default function NewPartnerPage() {
                 <div className="flex items-center space-x-4">
                   <div className="relative">
                     <Image
+                      width={80}
+                      height={80}
                       src={logoPreview}
                       alt="Logo preview"
                       className="w-20 h-20 rounded-lg object-cover bg-gray-700"

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
+import LoadingSpinner from "@/app/components/LoadingSpinner"
 import {
   Smartphone,
   Edit,
@@ -36,7 +37,7 @@ export default function ClientDetailsPage() {
   const clientId = params.id as string
 
   const [client, setClient] = useState<Client | null>(null)
-  const [_loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -50,6 +51,9 @@ export default function ClientDetailsPage() {
 
   const fetchClient = async () => {
     try {
+      setLoading(true)
+      setError(null)
+
       const response = await fetch(`/api/clients/${clientId}`)
       if (response.ok) {
         const clientData = await response.json()
@@ -147,22 +151,20 @@ export default function ClientDetailsPage() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64 bg-gray-900">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-      </div>
-    )
+  // Show loading spinner while Auth0 is loading or while fetching client data
+  if (isLoading || loading) {
+    return <LoadingSpinner size="lg" text="Loading client details..." fullScreen={true} />
   }
 
+  // Show error state only if we have an error and no client data
   if (error && !client) {
     return (
-      <div className="text-white p-6">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-400 mb-4">{error}</div>
+          <div className="text-red-400 mb-6 text-xl">{error}</div>
           <Link
             href="/dashboard/clients"
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+            className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
           >
             Back to Clients
           </Link>
@@ -171,20 +173,27 @@ export default function ClientDetailsPage() {
     )
   }
 
-  if (!client) {
+  // Show "not found" only if we're not loading and have no client data
+  if (!client && !loading) {
     return (
-      <div className="text-white p-6">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-400 mb-4">Client not found</div>
+          <div className="text-red-400 mb-6 text-xl">Client not found</div>
+          <p className="text-gray-400 mb-6">The requested client could not be found.</p>
           <Link
             href="/dashboard/clients"
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+            className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
           >
             Back to Clients
           </Link>
         </div>
       </div>
     )
+  }
+
+  // At this point, client should be defined since we've handled all other cases
+  if (!client) {
+    return null
   }
 
   return (
@@ -233,6 +242,8 @@ export default function ClientDetailsPage() {
             {/* Client Picture */}
             {client.picture_url ? (
               <Image
+                width={96}
+                height={96}
                 src={client.picture_url}
                 alt={client.name}
                 className="w-24 h-24 rounded-lg object-cover bg-gray-600"

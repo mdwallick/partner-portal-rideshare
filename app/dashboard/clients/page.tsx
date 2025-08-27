@@ -342,6 +342,8 @@ export default function ClientsPage() {
                   <div className="flex items-center space-x-4">
                     {client.picture_url ? (
                       <Image
+                        width={48}
+                        height={48}
                         src={client.picture_url}
                         alt={client.name}
                         className="w-12 h-12 rounded-lg object-cover bg-gray-600"

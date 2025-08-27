@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
+import { usePartner } from "@/app/contexts/PartnerContext"
 import {
   Home,
   Users,
@@ -48,53 +49,12 @@ const navigation = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useUser()
   const { isSuperAdmin } = useSuperAdmin()
+  const { partnerData } = usePartner()
   const pathname = usePathname()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [userPartner, setUserPartner] = useState<any>(null)
-  const [userRole, setUserRole] = useState<string | null>("")
   const userMenuRef = useRef<HTMLDivElement>(null)
-
-  // Fetch user's partner information and role
-  useEffect(() => {
-    if (user && !isSuperAdmin) {
-      // console.log("👤 User authenticated, fetching partner info...")
-      fetchUserInfo()
-    } else if (user && isSuperAdmin) {
-      // Super admins don't need partner info
-      setUserRole("sys_super_admin")
-    }
-  }, [user, isSuperAdmin])
-
-  const fetchUserInfo = async () => {
-    try {
-      // For non-super admins, fetch partner information
-      const partnerResponse = await fetch("/api/partners/me")
-      if (partnerResponse.ok) {
-        const partnerData = await partnerResponse.json()
-
-        if (partnerData === null) {
-          console.log("⚠️ No partner data found - user may not be assigned to any partner")
-          setUserPartner(null)
-          setUserRole(null)
-          return
-        }
-
-        // Set the partner data (the entire response object)
-        setUserPartner(partnerData)
-
-        // Determine user role based on partner user relationship
-        if (partnerData) {
-          setUserRole(partnerData.role)
-        }
-      } else {
-        console.error("❌ Failed to fetch partner data")
-      }
-    } catch (error) {
-      console.error("Error fetching user info:", error)
-    }
-  }
 
   // Redirect to landing if not authenticated
   useEffect(() => {
@@ -142,9 +102,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     // Partner admins and users see different items
-    if (userPartner?.partner) {
-      const partnerType = userPartner.partner.type
-      const userRole = userPartner.role
+    if (partnerData?.partner) {
+      const partnerType = partnerData.partner.type
+      const userRole = partnerData.role
 
       // Dashboard and Settings are always visible
       if (item.name === "Dashboard" || item.name === "Settings") {
@@ -239,16 +199,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="text-white font-medium">Super Administrator</div>
             <div className="text-xs text-orange-500">Full System Access</div>
           </div>
-        ) : userPartner ? (
+        ) : partnerData?.partner ? (
           <div className="px-4 py-3 border-b border-gray-700">
             <div className="text-sm text-gray-400">Current Partner</div>
-            <div className="text-white font-medium">{userPartner.partner?.name}</div>
-            <div className="text-xs text-gray-500 capitalize">{userPartner.partner?.type}</div>
+            <div className="text-white font-medium">{partnerData.partner?.name}</div>
+            <div className="text-xs text-gray-500 capitalize">{partnerData.partner?.type}</div>
             <div className="text-xs text-orange-400 capitalize mt-1">
-              {userRole ? userRole.replace("_", " ") : "Unknown"}
+              {partnerData.role ? partnerData.role.replace("_", " ") : "Unknown"}
             </div>
             <div className="text-xs text-gray-400 mt-1">
-              {userPartner.partner?.type === "technology"
+              {partnerData.partner?.type === "technology"
                 ? "Access: Clients, Rideshare Map, Users"
                 : "Access: Documents, Users"}
             </div>
@@ -336,9 +296,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="text-left">
                     <p className="text-sm font-medium text-white">{user.name || user.email}</p>
                     <p className="text-xs text-gray-400">{user.email}</p>
-                    {userRole && (
+                    {partnerData?.role && (
                       <p className="text-xs text-orange-400 capitalize">
-                        {userRole.replace("_", " ")}
+                        {partnerData.role.replace("_", " ")}
                       </p>
                     )}
                   </div>

@@ -199,6 +199,8 @@ export default function PartnersPage() {
                   <div className="flex items-center space-x-4">
                     {partner.logo_url ? (
                       <Image
+                        width={48}
+                        height={48}
                         src={partner.logo_url}
                         alt={partner.name}
                         className="w-12 h-12 rounded-lg object-cover bg-gray-600"

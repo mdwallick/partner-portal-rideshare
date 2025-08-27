@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
+import { usePartner } from "@/app/contexts/PartnerContext"
 import {
   Building2,
   Users,
@@ -20,6 +21,7 @@ import Image from "next/image"
 export default function DashboardPage() {
   const { user, isLoading } = useUser()
   const { isSuperAdmin } = useSuperAdmin()
+  const { partnerData } = usePartner()
   const [dashboardData, setDashboardData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -29,11 +31,12 @@ export default function DashboardPage() {
       user: !!user,
       isSuperAdmin,
       isSuperAdminType: typeof isSuperAdmin,
+      partnerData: !!partnerData,
     })
     if (user && isSuperAdmin !== null) {
       fetchDashboardData()
     }
-  }, [user, isSuperAdmin])
+  }, [user, isSuperAdmin, partnerData])
 
   const fetchDashboardData = async () => {
     try {
@@ -46,9 +49,16 @@ export default function DashboardPage() {
         console.log("Fetching system dashboard data...")
         await fetchSystemDashboardData()
       } else {
-        // Partner user dashboard - fetch partner-specific data
-        console.log("Fetching partner dashboard data...")
-        await fetchPartnerDashboardData()
+        // Partner user dashboard - use context data instead of fetching
+        console.log("Using partner data from context...")
+        if (partnerData) {
+          setDashboardData({
+            type: "partner",
+            partner: partnerData,
+          })
+        } else {
+          setError("Partner data not available")
+        }
       }
     } catch (error) {
       console.error("Error fetching dashboard data:", error)
@@ -127,23 +137,6 @@ export default function DashboardPage() {
         },
       })
       console.log("fetchSystemDashboardData: Set fallback dashboard data due to error")
-    }
-  }
-
-  const fetchPartnerDashboardData = async () => {
-    try {
-      // Fetch partner-specific data
-      const partnerResponse = await fetch("/api/partners/me")
-      if (partnerResponse.ok) {
-        const partnerData = await partnerResponse.json()
-        setDashboardData({
-          type: "partner",
-          partner: partnerData,
-        })
-      }
-    } catch (error) {
-      console.error("Error fetching partner dashboard data:", error)
-      setError("Failed to load partner dashboard data")
     }
   }
 
@@ -447,7 +440,7 @@ export default function DashboardPage() {
           <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Link
-              href={`/dashboard/partners/${partner.id}`}
+              href="/dashboard/partners/me"
               className="bg-blue-600 hover:bg-blue-700 rounded-lg p-6 text-white transition-colors"
             >
               <Building2 className="h-8 w-8 mb-2" />

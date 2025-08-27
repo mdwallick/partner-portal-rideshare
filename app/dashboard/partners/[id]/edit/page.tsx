@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
+import LoadingSpinner from "@/app/components/LoadingSpinner"
 import {
   Building2,
   Save,
@@ -68,7 +69,7 @@ export default function EditPartnerPage() {
       software_firmware: false,
     },
   })
-  const [_loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -306,12 +307,9 @@ export default function EditPartnerPage() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64 bg-gray-900">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-      </div>
-    )
+  // Show loading spinner while Auth0 is loading or while fetching partner data
+  if (isLoading || loading) {
+    return <LoadingSpinner size="xl" text="Loading partner details..." fullScreen={true} />
   }
 
   if (accessDenied) {
@@ -403,20 +401,27 @@ export default function EditPartnerPage() {
     )
   }
 
-  if (!partner) {
+  // Show "not found" only if we're not loading and have no partner data
+  if (!partner && !loading) {
     return (
-      <div className="text-white p-6">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-400 mb-4">Partner not found</div>
+          <h1 className="text-2xl font-bold text-white mb-4">Partner Not Found</h1>
+          <p className="text-gray-400 mb-6">The requested partner could not be found.</p>
           <Link
             href="/dashboard/partners"
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+            className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
           >
             Back to Partners
           </Link>
         </div>
       </div>
     )
+  }
+
+  // At this point, partner should be defined since we've handled all other cases
+  if (!partner) {
+    return null
   }
 
   return (

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
+import LoadingSpinner from "@/app/components/LoadingSpinner"
 import {
   User,
   Edit,
@@ -27,7 +28,7 @@ export default function UserDetailsPage() {
   const userId = params.id as string
 
   const [userData, setUserData] = useState<UserType | null>(null)
-  const [_loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -76,12 +77,12 @@ export default function UserDetailsPage() {
   const fetchUserDetails = async () => {
     try {
       setLoading(true)
-      console.log(`🔍 Fetching user details from: /api/users/${userId}`)
+      //console.log(`🔍 Fetching user details from: /api/users/${userId}`)
       const response = await fetch(`/api/users/${userId}`)
 
       if (response.ok) {
         const userData = await response.json()
-        console.log("📊 User data:", userData)
+        //console.log("📊 User data:", userData)
         setUserData(userData)
       } else {
         const errorText = await response.text()
@@ -102,7 +103,7 @@ export default function UserDetailsPage() {
 
     try {
       setDeleting(true)
-      console.log(`🗑️ Deleting user from unified API: /api/users?id=${userId}`)
+      //console.log(`🗑️ Deleting user from unified API: /api/users?id=${userId}`)
       const response = await fetch(`/api/users?id=${userId}`, {
         method: "DELETE",
       })
@@ -215,22 +216,20 @@ export default function UserDetailsPage() {
   //   })
   // }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64 bg-gray-900">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-      </div>
-    )
+  // Show loading spinner while Auth0 is loading or while fetching user data
+  if (isLoading || loading) {
+    return <LoadingSpinner size="lg" text="Loading user details..." fullScreen={true} />
   }
 
+  // Show error state only if we have an error and no user data
   if (error && !userData) {
     return (
-      <div className="text-white p-6">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-400 mb-4">{error}</div>
+          <div className="text-red-400 mb-6 text-xl">{error}</div>
           <Link
             href="/dashboard/users"
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+            className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
           >
             Back to Users
           </Link>
@@ -239,20 +238,27 @@ export default function UserDetailsPage() {
     )
   }
 
-  if (!userData) {
+  // Show "not found" only if we're not loading and have no user data
+  if (!userData && !loading) {
     return (
-      <div className="text-white p-6">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-400 mb-4">User not found</div>
+          <div className="text-red-400 mb-6 text-xl">User not found</div>
+          <p className="text-gray-400 mb-6">The requested user could not be found.</p>
           <Link
             href="/dashboard/users"
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+            className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
           >
             Back to Users
           </Link>
         </div>
       </div>
     )
+  }
+
+  // At this point, userData should be defined since we've handled all other cases
+  if (!userData) {
+    return null
   }
 
   return (

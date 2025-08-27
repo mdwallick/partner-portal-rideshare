@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
+import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
+import { usePartner } from "@/app/contexts/PartnerContext"
 import {
   Users,
   Search,
@@ -19,46 +21,35 @@ import { User as UserType } from "@/lib/types"
 
 export default function UsersPage() {
   const { user, isLoading } = useUser()
+  const { isSuperAdmin } = useSuperAdmin()
+  const { partnerData } = usePartner()
   const [users, setUsers] = useState<UserType[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [currentPartner, setCurrentPartner] = useState<any>(null)
 
   useEffect(() => {
-    if (user) {
+    if (user && (isSuperAdmin !== null || partnerData !== null)) {
       checkUserRole()
     }
-  }, [user])
+  }, [user, isSuperAdmin, partnerData])
 
   const checkUserRole = async () => {
     try {
       console.log("🔍 Checking user role...")
-      const response = await fetch("/api/partners/me")
-      console.log("📡 Response status:", response.status)
 
-      if (response.ok) {
-        const data = await response.json()
-        console.log("📊 User data:", data)
-
-        if (data.role === "super_admin" || data.isSuperAdmin) {
-          console.log("🛡️ User is super admin")
-          setIsSuperAdmin(true)
-          fetchUsers()
-        } else {
-          console.log("👥 User is partner user")
-          setIsSuperAdmin(false)
-          setCurrentPartner(data.partner)
-          fetchUsers()
-        }
+      if (isSuperAdmin) {
+        console.log("🛡️ User is super admin")
+        fetchUsers()
+      } else if (partnerData) {
+        console.log("👥 User is partner user")
+        setCurrentPartner(partnerData.partner)
+        fetchUsers()
       } else {
-        console.error("❌ Failed to determine user role, status:", response.status)
-        const errorText = await response.text()
-        console.error("❌ Error response:", errorText)
-        setError("Failed to determine user role")
+        console.log("⏳ Waiting for partner data...")
       }
     } catch (error) {
       console.error("❌ Error checking user role:", error)

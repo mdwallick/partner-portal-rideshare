@@ -1,29 +1,15 @@
-import { Toaster } from "react-hot-toast"
 import { Auth0Provider } from "@auth0/nextjs-auth0"
-import "./globals.css"
-import TokenDebugger from "./components/TokenDebugger"
-import NavigationLogger from "./components/NavigationLogger"
 import { SuperAdminProvider } from "./contexts/SuperAdminContext"
-
-export const metadata = {
-  title: process.env.NEXT_PUBLIC_APP_NAME || "Partner Portal",
-  description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || "Partner Portal",
-}
+import { PartnerProvider } from "./contexts/PartnerContext"
+import "./globals.css"
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  // Log when layout renders
-  // console.log("--------------------------------")
-  // console.log("🔄 Root Layout Rendered")
-
   return (
-    <html lang="en" className="h-full bg-waymo-primary">
-      <body className="min-h-screen bg-waymo-primary">
+    <html lang="en">
+      <body>
         <Auth0Provider>
           <SuperAdminProvider>
-            {children}
-            <Toaster position="top-right" />
-            <TokenDebugger />
-            <NavigationLogger />
+            <PartnerProvider>{children}</PartnerProvider>
           </SuperAdminProvider>
         </Auth0Provider>
       </body>
