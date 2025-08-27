@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
 import { Save, X, AlertTriangle, CheckCircle, ArrowLeft, Shield, Mail, Users } from "lucide-react"
@@ -28,13 +28,7 @@ export default function EditUserPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  useEffect(() => {
-    if (userId) {
-      fetchUser()
-    }
-  }, [userId])
-
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       const response = await fetch(`/api/users/${userId}`)
       if (response.ok) {
@@ -53,7 +47,13 @@ export default function EditUserPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [userId])
+
+  useEffect(() => {
+    if (userId) {
+      fetchUser()
+    }
+  }, [userId, fetchUser])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target

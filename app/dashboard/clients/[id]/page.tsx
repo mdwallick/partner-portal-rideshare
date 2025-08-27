@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
 import LoadingSpinner from "@/app/components/LoadingSpinner"
@@ -43,13 +43,7 @@ export default function ClientDetailsPage() {
   const [deleting, setDeleting] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  useEffect(() => {
-    if (clientId) {
-      fetchClient()
-    }
-  }, [clientId])
-
-  const fetchClient = async () => {
+  const fetchClient = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -67,7 +61,13 @@ export default function ClientDetailsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [clientId])
+
+  useEffect(() => {
+    if (clientId) {
+      fetchClient()
+    }
+  }, [clientId, fetchClient])
 
   const handleDelete = async () => {
     if (!client) return

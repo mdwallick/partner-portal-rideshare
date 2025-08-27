@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
 import { Save, X, Globe, Shield, AlertTriangle, CheckCircle, Cog } from "lucide-react"
@@ -46,13 +46,7 @@ export default function NewPartnerPage() {
   const [assignedMetroAreas, setAssignedMetroAreas] = useState<string[]>([])
   const [loadingMetroAreas, setLoadingMetroAreas] = useState(false)
 
-  useEffect(() => {
-    if (user) {
-      checkSuperAdminStatus()
-    }
-  }, [user])
-
-  const checkSuperAdminStatus = async () => {
+  const checkSuperAdminStatus = useCallback(async () => {
     try {
       const response = await fetch("/api/test-permissions")
       if (response.ok) {
@@ -65,7 +59,13 @@ export default function NewPartnerPage() {
     } catch (error) {
       console.error("Error checking super admin status:", error)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (user) {
+      checkSuperAdminStatus()
+    }
+  }, [user, checkSuperAdminStatus])
 
   const fetchMetroAreas = async () => {
     try {
@@ -96,6 +96,12 @@ export default function NewPartnerPage() {
       ...prev,
       [name]: value,
     }))
+
+    // Clear metro areas if partner type changes to manufacturing
+    if (name === "type" && value === "manufacturing") {
+      setAssignedMetroAreas([])
+      console.log("🏭 Partner type changed to manufacturing, cleared metro area assignments")
+    }
   }
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -462,58 +468,64 @@ export default function NewPartnerPage() {
           </div>
 
           {/* Metro Areas Assignment */}
-          {isSuperAdmin && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Metro Areas Access
-              </label>
-              <div className="space-y-4">
-                <p className="text-sm text-gray-400">
-                  Select which metro areas this partner can access for rideshare operations. Changes
-                  will be saved when you create the partner.
-                </p>
-
-                {loadingMetroAreas ? (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500 mr-2"></div>
-                    <span className="text-gray-400">Loading metro areas...</span>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-                    {metroAreas.map(metro => (
-                      <label key={metro.id} className="flex items-center space-x-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={assignedMetroAreas.includes(metro.id)}
-                          onChange={e => {
-                            if (e.target.checked) {
-                              setAssignedMetroAreas(prev => [...prev, metro.id])
-                            } else {
-                              setAssignedMetroAreas(prev => prev.filter(id => id !== metro.id))
-                            }
-                          }}
-                          className="rounded border-gray-600 text-orange-600 focus:ring-orange-500 focus:ring-offset-gray-800"
-                        />
-                        <div>
-                          <span className="text-sm font-medium text-white">{metro.name}</span>
-                          <span className="text-xs text-gray-400 ml-2">({metro.airport_code})</span>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-gray-500">
-                    {assignedMetroAreas.length} metro area(s) selected
+          {isSuperAdmin &&
+            (formData.type === "technology" || formData.type === "fleet_maintenance") && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Metro Areas Access
+                </label>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-400">
+                    Select which metro areas this partner can access for rideshare operations.
+                    Changes will be saved when you create the partner.
                   </p>
-                  <p className="text-xs text-blue-400">
-                    Metro areas will be saved with partner creation
-                  </p>
+
+                  {loadingMetroAreas ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500 mr-2"></div>
+                      <span className="text-gray-400">Loading metro areas...</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                      {metroAreas.map(metro => (
+                        <label
+                          key={metro.id}
+                          className="flex items-center space-x-3 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={assignedMetroAreas.includes(metro.id)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setAssignedMetroAreas(prev => [...prev, metro.id])
+                              } else {
+                                setAssignedMetroAreas(prev => prev.filter(id => id !== metro.id))
+                              }
+                            }}
+                            className="rounded border-gray-600 text-orange-600 focus:ring-orange-500 focus:ring-offset-gray-800"
+                          />
+                          <div>
+                            <span className="text-sm font-medium text-white">{metro.name}</span>
+                            <span className="text-xs text-gray-400 ml-2">
+                              ({metro.airport_code})
+                            </span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-gray-500">
+                      {assignedMetroAreas.length} metro area(s) selected
+                    </p>
+                    <p className="text-xs text-blue-400">
+                      Metro areas will be saved with partner creation
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Submit Button */}
           <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-700">

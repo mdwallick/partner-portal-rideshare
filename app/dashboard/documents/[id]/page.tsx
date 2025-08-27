@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
 import {
@@ -38,13 +38,7 @@ export default function DocumentDetailsPage() {
   const [deleting, setDeleting] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  useEffect(() => {
-    if (documentId) {
-      fetchDocument()
-    }
-  }, [documentId])
-
-  const fetchDocument = async () => {
+  const fetchDocument = useCallback(async () => {
     try {
       const response = await fetch(`/api/documents/${documentId}`)
       if (response.ok) {
@@ -59,7 +53,13 @@ export default function DocumentDetailsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [documentId])
+
+  useEffect(() => {
+    if (documentId) {
+      fetchDocument()
+    }
+  }, [documentId, fetchDocument])
 
   const handleDelete = async () => {
     if (!document) return

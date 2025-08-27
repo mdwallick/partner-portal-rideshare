@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 // import { useRouter } from "next/navigation"
 import { MapPin, Car, RefreshCw } from "lucide-react"
@@ -51,13 +51,7 @@ export default function RideshareMapPage() {
   const [isTechnologyPartner, setIsTechnologyPartner] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (user) {
-      checkPartnerType()
-    }
-  }, [user])
-
-  const checkPartnerType = async () => {
+  const checkPartnerType = useCallback(async () => {
     try {
       // First check if user is a super admin
       const superAdminResponse = await fetch("/api/test-permissions")
@@ -100,7 +94,13 @@ export default function RideshareMapPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (user) {
+      checkPartnerType()
+    }
+  }, [user, checkPartnerType])
 
   const fetchMetroAreas = async (partnerId: string) => {
     try {

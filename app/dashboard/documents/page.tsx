@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { FileText, Plus, Search, Edit, Trash2, Eye, Calendar, File, Clock } from "lucide-react"
 import Link from "next/link"
@@ -22,13 +22,7 @@ export default function DocumentsPage() {
   const [isManufacturingPartner, setIsManufacturingPartner] = useState(false)
   const [checkingAccess, setCheckingAccess] = useState(true)
 
-  useEffect(() => {
-    if (user) {
-      checkPartnerType()
-    }
-  }, [user])
-
-  const checkPartnerType = async () => {
+  const checkPartnerType = useCallback(async () => {
     try {
       const response = await fetch("/api/partners/me")
       if (response.ok) {
@@ -49,7 +43,13 @@ export default function DocumentsPage() {
     } finally {
       setCheckingAccess(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (user) {
+      checkPartnerType()
+    }
+  }, [user, checkPartnerType])
 
   const fetchDocuments = async () => {
     try {

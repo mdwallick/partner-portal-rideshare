@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
 import { Building2, Loader2 } from "lucide-react"
@@ -11,13 +11,7 @@ export default function MyPartnerPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (user) {
-      fetchPartnerInfo()
-    }
-  }, [user])
-
-  const fetchPartnerInfo = async () => {
+  const fetchPartnerInfo = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch("/api/partners/me")
@@ -40,7 +34,13 @@ export default function MyPartnerPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    if (user) {
+      fetchPartnerInfo()
+    }
+  }, [user, fetchPartnerInfo])
 
   if (isLoading || loading) {
     return (

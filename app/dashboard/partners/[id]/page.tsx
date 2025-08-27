@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import { useParams, useRouter } from "next/navigation"
@@ -30,13 +30,7 @@ export default function PartnerDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (user && partnerId) {
-      fetchPartnerDetails()
-    }
-  }, [user, partnerId])
-
-  const fetchPartnerDetails = async () => {
+  const fetchPartnerDetails = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -54,7 +48,13 @@ export default function PartnerDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [partnerId])
+
+  useEffect(() => {
+    if (user && partnerId) {
+      fetchPartnerDetails()
+    }
+  }, [user, partnerId, fetchPartnerDetails])
 
   const handleDeletePartner = async () => {
     if (!confirm("Are you sure you want to delete this partner? This action cannot be undone.")) {

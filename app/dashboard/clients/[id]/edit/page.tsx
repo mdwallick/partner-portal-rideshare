@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
 import {
@@ -49,13 +49,7 @@ export default function EditClientPage() {
   const [success, setSuccess] = useState(false)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (clientId) {
-      fetchClient()
-    }
-  }, [clientId])
-
-  const fetchClient = async () => {
+  const fetchClient = useCallback(async () => {
     try {
       const response = await fetch(`/api/clients/${clientId}`)
       if (response.ok) {
@@ -78,7 +72,13 @@ export default function EditClientPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [clientId])
+
+  useEffect(() => {
+    if (clientId) {
+      fetchClient()
+    }
+  }, [clientId, fetchClient])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target

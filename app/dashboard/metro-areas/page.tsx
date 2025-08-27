@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useRouter } from "next/navigation"
 import { Plus, Edit, Trash2, MapPin, Plane, Save } from "lucide-react"
@@ -34,13 +34,7 @@ export default function MetroAreasPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (user) {
-      checkSuperAdminAccess()
-    }
-  }, [user])
-
-  const checkSuperAdminAccess = async () => {
+  const checkSuperAdminAccess = useCallback(async () => {
     try {
       const response = await fetch("/api/test-permissions")
       if (response.ok) {
@@ -60,7 +54,13 @@ export default function MetroAreasPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    if (user) {
+      checkSuperAdminAccess()
+    }
+  }, [user, checkSuperAdminAccess])
 
   const fetchMetroAreas = async () => {
     try {

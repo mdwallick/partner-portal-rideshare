@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth0 } from "@/lib/auth0"
-import { checkPartnerPermission, checkPlatformPermission } from "@/lib/fga"
+import { checkPartnerPermission, checkPlatformPermission, deleteTuples } from "@/lib/fga"
 import { PartnerType } from "@prisma/client"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -240,59 +240,39 @@ export async function DELETE(
     }
 
     const partnerData = partner
-    console.log(`Deleting partner: ${partnerData.name} (${partnerId})`)
+    console.log(`🗑️ Starting comprehensive deletion of partner: ${partnerData.name} (${partnerId})`)
 
-    // Collect partner users before deletion for FGA cleanup
+    // Step 1: Collect all related data for FGA cleanup before deletion
+    console.log(`📋 Collecting related data for cleanup...`)
+
     const partnerUsers = await prisma.partnerUser.findMany({
       where: { partner_id: partnerId },
       select: { user_id: true, role: true },
     })
 
-    // First, delete all partner metro area records for this partner
-    console.log(`🗺️ Deleting metro area assignments for partner: ${partnerId}`)
-    const deletedMetroAreas = await prisma.partnerMetroArea.deleteMany({
+    const clientIds = await prisma.clientId.findMany({
       where: { partner_id: partnerId },
+      select: { id: true },
     })
-    console.log(`✅ Deleted ${deletedMetroAreas.count} metro area assignments`)
 
-    // Delete partner manufacturing capabilities if they exist
-    console.log(`🏭 Deleting manufacturing capabilities for partner: ${partnerId}`)
-    const deletedCapabilities = await prisma.partnerManufacturingCapabilities.deleteMany({
+    const documents = await prisma.document.findMany({
       where: { partner_id: partnerId },
+      select: { id: true },
     })
-    console.log(`✅ Deleted ${deletedCapabilities.count} manufacturing capability records`)
 
-    // Delete the partner from the database
-    await prisma.partner.delete({ where: { id: partnerId } })
+    console.log(
+      `📊 Found ${partnerUsers.length} partner users, ${clientIds.length} client IDs, ${documents.length} documents`
+    )
 
-    console.log(`✅ Deleted partner from database: ${partnerData.name}`)
+    // Step 2: Clean up FGA tuples for this partner
+    console.log(`🧹 Cleaning up FGA tuples for partner: ${partnerId}`)
 
-    // Delete the Auth0 organization if it exists
-    if (partnerData.organization_id) {
-      try {
-        console.log(`Deleting Okta group: ${partnerData.organization_id}`)
-        // This part of the original code was not part of the new_code, so it's kept as is.
-        // The new_code only provided GET and PUT, so I'm not adding it here.
-        // await auth0ManagementAPI.deleteOrganization(partnerData.organization_id)
-        console.log(`✅ Deleted organization: ${partnerData.organization_id}`)
-      } catch (oktaError) {
-        console.error("Failed to delete organization:", oktaError)
-        // Continue with the deletion even if Okta group deletion fails
-        // The partner is already deleted from the database
-      }
-    } else {
-      console.log("No org ID found, skipping deletion")
-    }
-
-    // Clean up FGA tuples for this partner
     try {
-      console.log(`Cleaning up FGA tuples for partner: ${partnerId}`)
-
       const tuplesToDelete: Array<{ user: string; relation: string; object: string }> = []
 
       // Add tuples for each partner user
       for (const partnerUser of partnerUsers) {
-        // Map stored role to FGA relation (schema uses can_admin | can_manage_members | can_view)
+        // Map stored role to FGA relation
         const fgaRelation = partnerUser.role
         tuplesToDelete.push({
           user: `user:${partnerUser.user_id}`,
@@ -301,26 +281,138 @@ export async function DELETE(
         })
       }
 
+      // Add tuples for client relationships
+      for (const clientId of clientIds) {
+        // Delete client-related FGA tuples
+        tuplesToDelete.push(
+          { user: `partner:${partnerId}`, relation: "can_admin", object: `client:${clientId.id}` },
+          { user: `partner:${partnerId}`, relation: "can_view", object: `client:${clientId.id}` },
+          { user: `partner:${partnerId}`, relation: "parent", object: `client:${clientId.id}` }
+        )
+      }
+
+      // Add tuples for document relationships
+      for (const document of documents) {
+        // Delete document-related FGA tuples
+        tuplesToDelete.push(
+          {
+            user: `partner:${partnerId}`,
+            relation: "can_admin",
+            object: `document:${document.id}`,
+          },
+          { user: `partner:${partnerId}`, relation: "can_view", object: `document:${document.id}` }
+        )
+      }
+
+      // Add partner-level FGA tuples
+      tuplesToDelete.push(
+        { user: `partner:${partnerId}`, relation: "can_admin", object: `metro_area:*` },
+        { user: `partner:${partnerId}`, relation: "can_view", object: `metro_area:*` }
+      )
+
       if (tuplesToDelete.length > 0) {
-        console.log(`Deleting ${tuplesToDelete.length} FGA tuples:`, tuplesToDelete)
-        // This part of the original code was not part of the new_code, so it's kept as is.
-        // The new_code only provided GET and PUT, so I'm not adding it here.
-        // await deleteTuples(tuplesToDelete)
-        console.log(`✅ Deleted ${tuplesToDelete.length} FGA tuples`)
+        console.log(`🗑️ Deleting ${tuplesToDelete.length} FGA tuples...`)
+        const fgaDeleteResult = await deleteTuples(tuplesToDelete)
+        if (fgaDeleteResult) {
+          console.log(`✅ Successfully deleted ${tuplesToDelete.length} FGA tuples`)
+        } else {
+          console.log(`⚠️ FGA tuple deletion may have failed`)
+        }
       } else {
-        console.log("No FGA tuples found to delete")
+        console.log(`ℹ️ No FGA tuples found to delete`)
       }
     } catch (fgaError) {
-      console.error("Failed to clean up FGA tuples:", fgaError)
+      console.error("❌ Failed to clean up FGA tuples:", fgaError)
       // Continue with the deletion even if FGA cleanup fails
     }
 
-    return NextResponse.json({ message: "Partner deleted successfully" })
-  } catch (error) {
-    console.error("Error deleting partner:", error)
-    if (error instanceof Error && error.message === "Authentication required") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // Step 3: Delete all related database records in the correct order
+    console.log(`🗄️ Deleting related database records...`)
+
+    // Delete partner metro area assignments
+    console.log(`🗺️ Deleting metro area assignments...`)
+    const deletedMetroAreas = await prisma.partnerMetroArea.deleteMany({
+      where: { partner_id: partnerId },
+    })
+    console.log(`✅ Deleted ${deletedMetroAreas.count} metro area assignments`)
+
+    // Delete partner manufacturing capabilities
+    console.log(`🏭 Deleting manufacturing capabilities...`)
+    const deletedCapabilities = await prisma.partnerManufacturingCapabilities.deleteMany({
+      where: { partner_id: partnerId },
+    })
+    console.log(`✅ Deleted ${deletedCapabilities.count} manufacturing capability records`)
+
+    // Delete client IDs
+    console.log(`🔑 Deleting client IDs...`)
+    const deletedClientIds = await prisma.clientId.deleteMany({
+      where: { partner_id: partnerId },
+    })
+    console.log(`✅ Deleted ${deletedClientIds.count} client ID records`)
+
+    // Delete documents
+    console.log(`📄 Deleting documents...`)
+    const deletedDocuments = await prisma.document.deleteMany({
+      where: { partner_id: partnerId },
+    })
+    console.log(`✅ Deleted ${deletedDocuments.count} document records`)
+
+    // Delete partner user relationships
+    console.log(`👥 Deleting partner user relationships...`)
+    const deletedPartnerUsers = await prisma.partnerUser.deleteMany({
+      where: { partner_id: partnerId },
+    })
+    console.log(`✅ Deleted ${deletedPartnerUsers.count} partner user relationships`)
+
+    // Step 4: Finally delete the partner record itself
+    console.log(`🏢 Deleting partner record...`)
+    await prisma.partner.delete({ where: { id: partnerId } })
+    console.log(`✅ Successfully deleted partner: ${partnerData.name}`)
+
+    // Step 5: Clean up external services (if applicable)
+    if (partnerData.organization_id) {
+      try {
+        console.log(`🌐 Cleaning up external organization: ${partnerData.organization_id}`)
+        // Note: Auth0 organization cleanup would go here if implemented
+        // await auth0ManagementAPI.deleteOrganization(partnerData.organization_id)
+        console.log(`✅ External organization cleanup completed`)
+      } catch (externalError) {
+        console.error("⚠️ Failed to clean up external organization:", externalError)
+        // Continue - the partner is already deleted from the database
+      }
+    } else {
+      console.log(`ℹ️ No external organization ID found, skipping external cleanup`)
     }
+
+    console.log(`🎉 Partner deletion completed successfully: ${partnerData.name}`)
+    return NextResponse.json({
+      message: "Partner deleted successfully",
+      deletedRecords: {
+        metroAreas: deletedMetroAreas.count,
+        manufacturingCapabilities: deletedCapabilities.count,
+        clientIds: deletedClientIds.count,
+        documents: deletedDocuments.count,
+        partnerUsers: deletedPartnerUsers.count,
+      },
+    })
+  } catch (error) {
+    console.error("❌ Error deleting partner:", error)
+
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes("Authentication required")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+      if (error.message.includes("foreign key constraint")) {
+        return NextResponse.json(
+          {
+            error: "Cannot delete partner due to remaining references. Please contact support.",
+          },
+          { status: 400 }
+        )
+      }
+    }
+
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

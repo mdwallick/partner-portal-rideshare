@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import {
@@ -39,20 +39,7 @@ export default function ClientsPage() {
   const [isTechnologyPartner, setIsTechnologyPartner] = useState(false)
   const [checkingAccess, setCheckingAccess] = useState(true)
 
-  useEffect(() => {
-    if (user) {
-      if (isSuperAdmin) {
-        // Super admins can access clients directly
-        setIsTechnologyPartner(true)
-        fetchClients()
-        setCheckingAccess(false)
-      } else {
-        checkPartnerType()
-      }
-    }
-  }, [user, isSuperAdmin])
-
-  const checkPartnerType = async () => {
+  const checkPartnerType = useCallback(async () => {
     try {
       const response = await fetch("/api/partners/me")
       if (response.ok) {
@@ -73,7 +60,20 @@ export default function ClientsPage() {
     } finally {
       setCheckingAccess(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (user) {
+      if (isSuperAdmin) {
+        // Super admins can access clients directly
+        setIsTechnologyPartner(true)
+        fetchClients()
+        setCheckingAccess(false)
+      } else {
+        checkPartnerType()
+      }
+    }
+  }, [user, isSuperAdmin, checkPartnerType])
 
   const fetchClients = async () => {
     try {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
 import LoadingSpinner from "@/app/components/LoadingSpinner"
@@ -81,13 +81,44 @@ export default function EditPartnerPage() {
   const [assignedMetroAreas, setAssignedMetroAreas] = useState<string[]>([])
   const [loadingMetroAreas, setLoadingMetroAreas] = useState(false)
 
-  useEffect(() => {
-    if (partnerId) {
-      checkAccessAndFetchPartner()
+  const fetchPartner = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/partners/${partnerId}`)
+      if (response.ok) {
+        const partnerData = await response.json()
+        setPartner(partnerData)
+        setFormData({
+          name: partnerData.name,
+          type: partnerData.type,
+          logo_url: partnerData.logo_url || "",
+          manufacturingCapabilities: partnerData.manufacturingCapabilities || {
+            hardware_sensors: false,
+            hardware_parts: false,
+            software_firmware: false,
+          },
+        })
+        if (partnerData.logo_url) {
+          setLogoPreview(partnerData.logo_url)
+        }
+
+        // Set assigned metro areas if they exist
+        if (partnerData.metroAreas && Array.isArray(partnerData.metroAreas)) {
+          const metroAreaIds = partnerData.metroAreas.map((metro: any) => metro.id)
+          setAssignedMetroAreas(metroAreaIds)
+          console.log("🗺️ Set assigned metro areas from partner data:", metroAreaIds)
+        }
+      } else {
+        setError("Failed to fetch partner information")
+      }
+    } catch (error) {
+      console.error("Error fetching partner:", error)
+      setError("Failed to load partner data")
+    } finally {
+      setLoading(false)
     }
   }, [partnerId])
 
-  const checkAccessAndFetchPartner = async () => {
+  const checkAccessAndFetchPartner = useCallback(async () => {
     try {
       // First check if user is a super admin
       const superAdminResponse = await fetch("/api/test-permissions")
@@ -126,44 +157,7 @@ export default function EditPartnerPage() {
       setAccessDenied(true)
       setLoading(false)
     }
-  }
-
-  const fetchPartner = async () => {
-    try {
-      const response = await fetch(`/api/partners/${partnerId}`)
-      if (response.ok) {
-        const partnerData = await response.json()
-        setPartner(partnerData)
-        setFormData({
-          name: partnerData.name,
-          type: partnerData.type,
-          logo_url: partnerData.logo_url || "",
-          manufacturingCapabilities: partnerData.manufacturingCapabilities || {
-            hardware_sensors: false,
-            hardware_parts: false,
-            software_firmware: false,
-          },
-        })
-        if (partnerData.logo_url) {
-          setLogoPreview(partnerData.logo_url)
-        }
-
-        // Set assigned metro areas if they exist
-        if (partnerData.metroAreas && Array.isArray(partnerData.metroAreas)) {
-          const metroAreaIds = partnerData.metroAreas.map((metro: any) => metro.id)
-          setAssignedMetroAreas(metroAreaIds)
-          console.log("🗺️ Set assigned metro areas from partner data:", metroAreaIds)
-        }
-      } else {
-        setError("Failed to fetch partner information")
-      }
-    } catch (error) {
-      console.error("Error fetching partner:", error)
-      setError("Failed to load partner data")
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [partnerId, fetchPartner])
 
   const fetchMetroAreas = async () => {
     try {
@@ -187,6 +181,12 @@ export default function EditPartnerPage() {
       setLoadingMetroAreas(false)
     }
   }
+
+  useEffect(() => {
+    if (partnerId) {
+      checkAccessAndFetchPartner()
+    }
+  }, [partnerId, checkAccessAndFetchPartner])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target

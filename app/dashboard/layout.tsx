@@ -41,7 +41,7 @@ const navigation = [
     fleetMaintenanceOnly: true,
   },
   { name: "Documents", href: "/dashboard/documents", icon: FileText, manufacturingOnly: true },
-  { name: "Users", href: "/dashboard/users", icon: Users, partnerAdminOnly: true },
+  // { name: "Users", href: "/dashboard/users", icon: Users, partnerAdminOnly: true },
   // { name: "Admin", href: "/dashboard/admin", icon: Shield, superAdminOnly: true },
   { name: "Settings", href: "/dashboard/settings", icon: Cog },
 ]

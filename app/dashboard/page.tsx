@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import { usePartner } from "@/app/contexts/PartnerContext"
@@ -26,19 +26,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    console.log("Dashboard useEffect triggered:", {
-      user: !!user,
-      isSuperAdmin,
-      isSuperAdminType: typeof isSuperAdmin,
-      partnerData: !!partnerData,
-    })
-    if (user && isSuperAdmin !== null) {
-      fetchDashboardData()
-    }
-  }, [user, isSuperAdmin, partnerData])
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       console.log("fetchDashboardData called, isSuperAdmin:", isSuperAdmin)
       setLoading(true)
@@ -66,7 +54,19 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [isSuperAdmin, partnerData])
+
+  useEffect(() => {
+    console.log("Dashboard useEffect triggered:", {
+      user: !!user,
+      isSuperAdmin,
+      isSuperAdminType: typeof isSuperAdmin,
+      partnerData: !!partnerData,
+    })
+    if (user && isSuperAdmin !== null) {
+      fetchDashboardData()
+    }
+  }, [user, isSuperAdmin, partnerData, fetchDashboardData])
 
   const fetchSystemDashboardData = async () => {
     try {
@@ -448,7 +448,7 @@ export default function DashboardPage() {
               <p className="text-blue-100">See partner details and statistics</p>
             </Link>
 
-            {dashboardData.role === "can_admin" && (
+            {/* {dashboardData.role === "can_admin" && (
               <Link
                 href="/dashboard/users"
                 className="bg-green-600 hover:bg-green-700 rounded-lg p-6 text-white transition-colors"
@@ -457,7 +457,7 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold">Manage Team</h3>
                 <p className="text-green-100">Invite and manage team members</p>
               </Link>
-            )}
+            )} */}
 
             {partner.type === "technology" && (
               <Link

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
 import LoadingSpinner from "@/app/components/LoadingSpinner"
@@ -36,45 +36,7 @@ export default function UserDetailsPage() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [_currentPartner, setCurrentPartner] = useState<any>(null)
 
-  useEffect(() => {
-    if (user) {
-      checkUserRole()
-    }
-  }, [user])
-
-  const checkUserRole = async () => {
-    try {
-      console.log("🔍 Checking user role...")
-      const response = await fetch("/api/partners/me")
-      console.log("📡 Response status:", response.status)
-
-      if (response.ok) {
-        const data = await response.json()
-        console.log("📊 User data:", data)
-
-        if (data.role === "super_admin" || data.isSuperAdmin) {
-          console.log("🛡️ User is super admin")
-          setIsSuperAdmin(true)
-          fetchUserDetails()
-        } else {
-          console.log("👥 User is partner user")
-          setIsSuperAdmin(false)
-          setCurrentPartner(data.partner)
-          fetchUserDetails()
-        }
-      } else {
-        console.error("❌ Failed to determine user role, status:", response.status)
-        const errorText = await response.text()
-        console.error("❌ Error response:", errorText)
-        setError("Failed to determine user role")
-      }
-    } catch (error) {
-      console.error("❌ Error checking user role:", error)
-      setError("Failed to load user information")
-    }
-  }
-
-  const fetchUserDetails = async () => {
+  const fetchUserDetails = useCallback(async () => {
     try {
       setLoading(true)
       //console.log(`🔍 Fetching user details from: /api/users/${userId}`)
@@ -96,7 +58,59 @@ export default function UserDetailsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [userId])
+
+  const checkUserRole = useCallback(async () => {
+    try {
+      console.log("🔍 Checking user role...")
+
+      // For partner users, check if they can access this specific user
+      const response = await fetch("/api/partners/me")
+      console.log("📡 Response status:", response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("📊 User data:", data)
+
+        if (data.partner) {
+          console.log("👥 User is partner user")
+          setIsSuperAdmin(false)
+          setCurrentPartner(data.partner)
+          fetchUserDetails()
+        } else {
+          console.log("❌ No partner found for user")
+          setError("No partner access found")
+        }
+      } else if (response.status === 404) {
+        // User has no partner assignments - this is normal for some users
+        console.log("ℹ️ User has no partner assignments")
+        setError("No partner access found")
+      } else {
+        console.error("❌ Failed to determine user role, status:", response.status)
+        const errorText = await response.text()
+        console.error("❌ Error response:", errorText)
+        setError("Failed to determine user role")
+      }
+    } catch (error) {
+      console.error("❌ Error checking user role:", error)
+      setError("Failed to load user information")
+    }
+  }, [fetchUserDetails])
+
+  useEffect(() => {
+    if (user && isSuperAdmin !== null) {
+      if (isSuperAdmin) {
+        // Super admin can view any user - fetch details directly
+        console.log("🛡️ User is super admin, fetching user details directly")
+        setIsSuperAdmin(true)
+        fetchUserDetails()
+      } else {
+        // Partner user - check their access first
+        console.log("👥 User is partner user, checking access")
+        checkUserRole()
+      }
+    }
+  }, [user, isSuperAdmin, checkUserRole, fetchUserDetails])
 
   const handleDelete = async () => {
     if (!userData) return

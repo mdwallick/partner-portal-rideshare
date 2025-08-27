@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useRouter } from "next/navigation"
 import { UserPlus, Mail, User, Shield, Building2, ArrowLeft } from "lucide-react"
@@ -29,13 +29,7 @@ export default function NewUserPage() {
   const [role, setRole] = useState("")
   const [partnerId, setPartnerId] = useState("")
 
-  useEffect(() => {
-    if (user) {
-      checkUserRole()
-    }
-  }, [user])
-
-  const checkUserRole = async () => {
+  const checkUserRole = useCallback(async () => {
     try {
       const response = await fetch("/api/partners/me")
       if (response.ok) {
@@ -56,7 +50,13 @@ export default function NewUserPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (user) {
+      checkUserRole()
+    }
+  }, [user, checkUserRole])
 
   const fetchPartners = async () => {
     try {

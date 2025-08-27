@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -45,13 +45,7 @@ export default function FleetMaintenancePage() {
   const [priorityFilter, setPriorityFilter] = useState("all")
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (user) {
-      checkPartnerType()
-    }
-  }, [user])
-
-  const checkPartnerType = async () => {
+  const checkPartnerType = useCallback(async () => {
     try {
       const response = await fetch("/api/partners/me")
       if (response.ok) {
@@ -72,7 +66,13 @@ export default function FleetMaintenancePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    if (user) {
+      checkPartnerType()
+    }
+  }, [user, checkPartnerType])
 
   const fetchMaintenanceData = async () => {
     try {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import { usePartner } from "@/app/contexts/PartnerContext"
@@ -31,13 +31,7 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [currentPartner, setCurrentPartner] = useState<any>(null)
 
-  useEffect(() => {
-    if (user && (isSuperAdmin !== null || partnerData !== null)) {
-      checkUserRole()
-    }
-  }, [user, isSuperAdmin, partnerData])
-
-  const checkUserRole = async () => {
+  const checkUserRole = useCallback(async () => {
     try {
       console.log("🔍 Checking user role...")
 
@@ -55,7 +49,13 @@ export default function UsersPage() {
       console.error("❌ Error checking user role:", error)
       setError("Failed to load user information")
     }
-  }
+  }, [isSuperAdmin, partnerData])
+
+  useEffect(() => {
+    if (user && (isSuperAdmin !== null || partnerData !== null)) {
+      checkUserRole()
+    }
+  }, [user, isSuperAdmin, partnerData, checkUserRole])
 
   const fetchUsers = async () => {
     try {

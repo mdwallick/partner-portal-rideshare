@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import {
