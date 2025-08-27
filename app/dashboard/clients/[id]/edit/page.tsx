@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
-import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import {
   Smartphone,
   Save,
@@ -16,6 +15,7 @@ import {
   ArrowLeft,
 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 interface Client {
   id: string
@@ -32,8 +32,7 @@ interface ClientFormData {
 }
 
 export default function EditClientPage() {
-  const { user, isLoading } = useUser()
-  const { isSuperAdmin } = useSuperAdmin()
+  const { isLoading } = useUser()
   const router = useRouter()
   const params = useParams()
   const clientId = params.id as string
@@ -44,7 +43,7 @@ export default function EditClientPage() {
     type: "web",
     picture_url: "",
   })
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -284,7 +283,7 @@ export default function EditClientPage() {
         <h3 className="text-sm font-medium text-gray-400 mb-2">Current Client</h3>
         <div className="flex items-center space-x-4">
           {client.picture_url ? (
-            <img
+            <Image
               src={client.picture_url}
               alt={client.name}
               className="w-16 h-16 rounded-lg object-cover bg-gray-600"
@@ -389,7 +388,7 @@ export default function EditClientPage() {
               {/* Logo Preview */}
               {logoPreview && (
                 <div className="flex items-center space-x-4">
-                  <img
+                  <Image
                     src={logoPreview}
                     alt="Logo preview"
                     className="w-20 h-20 rounded-lg object-cover bg-gray-700"

@@ -26,13 +26,13 @@ interface Document {
 }
 
 export default function DocumentDetailsPage() {
-  const { user, isLoading } = useUser()
+  const { isLoading } = useUser()
   const params = useParams()
   const router = useRouter()
   const documentId = params.id as string
 
   const [document, setDocument] = useState<Document | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)

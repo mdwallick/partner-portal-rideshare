@@ -2,18 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
-import {
-  FileText,
-  Plus,
-  Search,
-  Filter,
-  Edit,
-  Trash2,
-  Eye,
-  Calendar,
-  File,
-  Clock,
-} from "lucide-react"
+import { FileText, Plus, Search, Edit, Trash2, Eye, Calendar, File, Clock } from "lucide-react"
 import Link from "next/link"
 
 interface Document {
@@ -27,7 +16,7 @@ interface Document {
 export default function DocumentsPage() {
   const { user, isLoading } = useUser()
   const [documents, setDocuments] = useState<Document[]>([])
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isManufacturingPartner, setIsManufacturingPartner] = useState(false)

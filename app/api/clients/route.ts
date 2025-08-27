@@ -141,6 +141,7 @@ export async function POST(request: NextRequest) {
       picture_url = body.picture_url
       partner_id = body.partner_id // Allow super admin to specify partner
     } catch (parseError) {
+      console.error("Error parsing JSON body:", parseError)
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
     }
 

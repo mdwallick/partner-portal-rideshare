@@ -4,20 +4,7 @@ import { useState, useEffect } from "react"
 import { useUser } from "@auth0/nextjs-auth0"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import {
-  Cog,
-  Plus,
-  Search,
-  Filter,
-  Wrench,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  Car,
-  Download,
-  Upload,
-  Eye,
-} from "lucide-react"
+import { Cog, Plus, Search, Filter, Wrench, Clock, CheckCircle, Download, Eye } from "lucide-react"
 
 interface MaintenanceTask {
   id: string
@@ -52,7 +39,7 @@ export default function FleetMaintenancePage() {
   const [loading, setLoading] = useState(true)
   const [isFleetMaintenancePartner, setIsFleetMaintenancePartner] = useState(false)
   const [maintenanceTasks, setMaintenanceTasks] = useState<MaintenanceTask[]>([])
-  const [softwareUpdates, setSoftwareUpdates] = useState<SoftwareUpdate[]>([])
+  const [_softwareUpdates, setSoftwareUpdates] = useState<SoftwareUpdate[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [taskFilter, setTaskFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")

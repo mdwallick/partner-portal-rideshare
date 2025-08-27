@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { v4 as uuidv4 } from "uuid"
 import { prisma } from "@/lib/prisma"
-import { checkPermission, listObjects, writeTuple, checkPlatformPermission } from "@/lib/fga"
+import { listObjects, writeTuple, checkPlatformPermission } from "@/lib/fga"
 import { auth0 } from "@/lib/auth0"
 import { auth0ManagementAPI } from "@/lib/auth0-management"
-import { FGA_RELATIONS } from "@/lib/fga-model"
 import { PartnerType } from "@prisma/client"
 
 export async function GET() {

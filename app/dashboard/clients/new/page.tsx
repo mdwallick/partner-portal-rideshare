@@ -15,6 +15,7 @@ import {
   CheckCircle,
 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 interface ClientFormData {
   name: string
@@ -23,9 +24,8 @@ interface ClientFormData {
 }
 
 export default function NewClientPage() {
-  const { user, isLoading } = useUser()
+  const { isLoading } = useUser()
   const { isSuperAdmin } = useSuperAdmin()
-  const router = useRouter()
   const [formData, setFormData] = useState<ClientFormData>({
     name: "",
     type: "web",
@@ -376,7 +376,7 @@ export default function NewClientPage() {
               {/* Logo Preview */}
               {logoPreview && (
                 <div className="flex items-center space-x-4">
-                  <img
+                  <Image
                     src={logoPreview}
                     alt="Logo preview"
                     className="w-20 h-20 rounded-lg object-cover bg-gray-700"

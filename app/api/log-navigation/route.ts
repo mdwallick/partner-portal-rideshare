@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const { pathname } = await request.json()
 
@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     // console.log("\n\n\n\n\n")
     // console.log("===============================================")
     // console.log("\n")
-    // console.log(`🌎 User navigated to: ${pathname}`)
+    console.log(`🌎 User navigated to: ${pathname}`)
 
     return NextResponse.json({ success: true })
   } catch (error) {

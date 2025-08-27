@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useUser } from "@auth0/nextjs-auth0"
-import { useSuperAdmin } from "@/app/contexts/SuperAdminContext"
 import {
   Smartphone,
   Edit,
@@ -15,11 +14,10 @@ import {
   Calendar,
   AlertTriangle,
   CheckCircle,
-  MoreVertical,
   Copy,
-  ExternalLink,
 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 interface Client {
   id: string
@@ -32,14 +30,13 @@ interface Client {
 }
 
 export default function ClientDetailsPage() {
-  const { user, isLoading } = useUser()
-  const { isSuperAdmin } = useSuperAdmin()
+  const { isLoading } = useUser()
   const params = useParams()
   const router = useRouter()
   const clientId = params.id as string
 
   const [client, setClient] = useState<Client | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -235,7 +232,7 @@ export default function ClientDetailsPage() {
           <div className="flex items-start space-x-6">
             {/* Client Picture */}
             {client.picture_url ? (
-              <img
+              <Image
                 src={client.picture_url}
                 alt={client.name}
                 className="w-24 h-24 rounded-lg object-cover bg-gray-600"

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth0 } from "@/lib/auth0"
-import { checkMetroAreaPermission, checkPlatformPermission, writeTuple } from "@/lib/fga"
+import { checkPlatformPermission } from "@/lib/fga"
 import { prisma } from "@/lib/prisma"
 
 // GET /api/metro-areas - List metro areas accessible to the user

@@ -6,10 +6,9 @@ import {
   checkClientPermission,
   checkPartnerPermission,
   checkPlatformPermission,
-  writeTuple,
   deleteTuple,
 } from "@/lib/fga"
-import { createFgaClient, createFgaPartner, createFgaUser } from "@/lib/fga-model"
+import { createFgaClient, createFgaPartner } from "@/lib/fga-model"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

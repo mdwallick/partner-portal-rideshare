@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid"
 import { prisma } from "@/lib/prisma"
 import { auth0 } from "@/lib/auth0"
 import { checkPartnerPermission, writeTuple } from "@/lib/fga"
-import { createFgaDocument, createFgaPartner, FGA_RELATIONS } from "@/lib/fga-model"
+import { createFgaDocument, createFgaPartner } from "@/lib/fga-model"
 
 export async function GET() {
   try {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth0 } from "@/lib/auth0"
-import { checkDocumentPermission, checkPartnerPermission } from "@/lib/fga"
+import { checkDocumentPermission } from "@/lib/fga"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

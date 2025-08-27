@@ -332,6 +332,8 @@ export default function DashboardPage() {
                           <div className="flex-shrink-0 h-10 w-10">
                             {partner.logo_url ? (
                               <Image
+                                width={40}
+                                height={40}
                                 className="h-10 w-10 rounded-lg object-cover"
                                 src={partner.logo_url}
                                 alt={`${partner.name} logo`}

@@ -16,7 +16,6 @@ import {
   LogOut,
   Building2,
   FileText,
-  Shield,
   Cog,
   MapPin,
 } from "lucide-react"

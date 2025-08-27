@@ -8,7 +8,6 @@ import {
   Plus,
   Search,
   Filter,
-  MoreVertical,
   Edit,
   Trash2,
   Eye,
@@ -17,6 +16,7 @@ import {
   Globe,
 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 interface Client {
   id: string
@@ -32,7 +32,7 @@ export default function ClientsPage() {
   const { user, isLoading } = useUser()
   const { isSuperAdmin } = useSuperAdmin()
   const [clients, setClients] = useState<Client[]>([])
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState<string>("all")
   const [error, setError] = useState<string | null>(null)
@@ -341,7 +341,7 @@ export default function ClientsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     {client.picture_url ? (
-                      <img
+                      <Image
                         src={client.picture_url}
                         alt={client.name}
                         className="w-12 h-12 rounded-lg object-cover bg-gray-600"

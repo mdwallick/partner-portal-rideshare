@@ -29,7 +29,7 @@ interface DocumentFormData {
 }
 
 export default function EditDocumentPage() {
-  const { user, isLoading } = useUser()
+  const { isLoading } = useUser()
   const router = useRouter()
   const params = useParams()
   const documentId = params.id as string
@@ -39,7 +39,7 @@ export default function EditDocumentPage() {
     name: "",
     description: "",
   })
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)

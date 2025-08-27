@@ -12,7 +12,7 @@ interface DocumentFormData {
 }
 
 export default function NewDocumentPage() {
-  const { user, isLoading } = useUser()
+  const { isLoading } = useUser()
   const router = useRouter()
   const [formData, setFormData] = useState<DocumentFormData>({
     name: "",
@@ -71,7 +71,7 @@ export default function NewDocumentPage() {
       })
 
       if (response.ok) {
-        const result = await response.json()
+        // const result = await response.json()
         setSuccess(true)
 
         // Redirect to documents list after a short delay
